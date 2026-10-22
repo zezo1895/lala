@@ -77,42 +77,78 @@
                     </div>
                 </div>
 
-                <div class="voice-player-container">
-                    <button class="voice-nav-btn" id="btnPrevVoice" title="السابق">⏮</button>
-                    <button class="voice-nav-btn voice-seek-btn" id="btnSeekBack" title="ترجيع 5 ثواني">↺ 5s</button>
-                    <button class="voice-play-btn" id="btnPlayVoice" title="تشغيل / إيقاف">
-                        <span id="voicePlayIcon">▶</span>
-                    </button>
-                    <button class="voice-nav-btn voice-seek-btn" id="btnSeekForward" title="تقديم 5 ثواني">5s ↻</button>
-                    <button class="voice-nav-btn" id="btnNextVoice" title="عشوائي / التالي">⏭</button>
-                    <button class="voice-speed-pill" id="btnVoiceSpeed" title="سرعة الصوت">1x</button>
-                </div>
-
-                <!-- Interactive Timeline Scrub Bar -->
-                <div class="voice-timeline-box">
-                    <span class="voice-time-text" id="voiceCurrentTime">00:00</span>
-                    <div class="voice-slider-wrapper">
-                        <div class="voice-slider-fill" id="voiceSliderFill"></div>
-                        <input type="range" id="voiceSeekSlider" min="0" max="100" value="0" step="0.1" class="voice-range-slider" aria-label="شريط تقديم وترجيع الفويس">
+                <!-- Voice Note Player (صوت حبيبك 🎙️) -->
+                <div class="voice-card" id="voicePlayerCard">
+                    <div class="voice-header">
+                        <div class="voice-title-box">
+                            <h3 id="voiceCardTitle">فويس نوت من حبيبك 🎙️❤️</h3>
+                            <p id="voiceCardSubtitle">اسمعي صوتي لما توحشيني والدنيا تقفل</p>
+                        </div>
+                        <div class="voice-controls-top">
+                            <button class="voice-shuffle-pill" id="btnShuffleVoice">🔀 عشوائي</button>
+                            <span class="badge-tag" id="voiceCounterBadge" style="font-size: 11px; padding: 3px 8px;">1 من 3</span>
+                        </div>
                     </div>
-                    <span class="voice-time-text" id="voiceTotalTime">00:00</span>
-                </div>
 
-                <!-- Audio Waveform Animation -->
-                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 8px;">
-                    <div class="sound-waves" id="soundWaveBars" style="justify-content: center;">
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
+                    <!-- 1. Primary Playback & Seeking (Hero 3-Buttons) -->
+                    <div class="voice-main-controls">
+                        <button class="voice-circle-btn" id="btnSeekBack" title="ترجيع 5 ثواني للخلف">
+                            <span class="btn-icon">↺</span>
+                            <span class="btn-text">5 ثواني</span>
+                        </button>
+
+                        <button class="voice-play-hero" id="btnPlayVoice" title="تشغيل / إيقاف">
+                            <span id="voicePlayIcon">▶</span>
+                        </button>
+
+                        <button class="voice-circle-btn" id="btnSeekForward" title="تقديم 5 ثواني للأمام">
+                            <span class="btn-icon">↻</span>
+                            <span class="btn-text">5 ثواني</span>
+                        </button>
                     </div>
-                </div>
 
-                <audio id="mainAudioElement" style="display: none;"></audio>
+                    <!-- 2. Luxury Touch Scrubber Bar & Waveforms -->
+                    <div class="voice-scrub-box" dir="ltr">
+                        <span class="voice-badge-time" id="voiceCurrentTime">00:00</span>
+                        
+                        <div class="voice-track-hitbox" id="voiceTrackWrapper" title="اضغطي أو اسحبي للتقديم والترجيع">
+                            <div class="voice-track-rail">
+                                <div class="voice-track-fill" id="voiceTrackFill"></div>
+                                <div class="voice-track-thumb" id="voiceTrackThumb"></div>
+                            </div>
+                            <!-- Integrated Ambient Waveform -->
+                            <div class="sound-waves" id="soundWaveBars">
+                                <div class="wave-bar"></div><div class="wave-bar"></div>
+                                <div class="wave-bar"></div><div class="wave-bar"></div>
+                                <div class="wave-bar"></div><div class="wave-bar"></div>
+                                <div class="wave-bar"></div><div class="wave-bar"></div>
+                                <div class="wave-bar"></div><div class="wave-bar"></div>
+                            </div>
+                        </div>
+
+                        <span class="voice-badge-time" id="voiceTotalTime">00:00</span>
+                    </div>
+
+                    <div class="voice-scrub-hint">
+                        <span>👈 اسحبي الشريط يمين أو شمال للتقديم والترجيع لأي ثانية 👉</span>
+                    </div>
+
+                    <!-- 3. Navigation (Previous, Speed, Next) -->
+                    <div class="voice-sub-controls">
+                        <button class="voice-pill-action" id="btnPrevVoice">
+                            <span>⏮ السابق</span>
+                        </button>
+
+                        <button class="voice-pill-action speed-pill" id="btnVoiceSpeed" title="تسريع أو تبطيء الصوت">
+                            <span id="speedLabelText">⚡ 1x</span>
+                        </button>
+
+                        <button class="voice-pill-action" id="btnNextVoice">
+                            <span>التالي ⏭</span>
+                        </button>
+                    </div>
+
+                    <audio id="mainAudioElement" preload="metadata" style="display: none;"></audio>
                 <p id="voiceEmptyHint" style="font-size: 11px; color: #999; margin-top: 8px; text-align: center; display: none;">
                     (حبيبك لسه مسجلش فويس.. يقدر يسجل فويسات من لوحة التحكم ⚙️)
                 </p>

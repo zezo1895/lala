@@ -58,7 +58,7 @@ body{font-family:var(--font-body);color:var(--text-main);direction:rtl;text-alig
   background:rgba(255,255,255,.08);box-shadow:0 4px 0 rgba(0,0,0,.35);transition:transform .12s,box-shadow .12s}
 .btn-secondary:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
 
-/* ---- Voice ---- */
+/* ---- Voice Player (Luxury Telegram / Spotify Style) ---- */
 .voice-card::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at 90% 0,rgba(255,93,134,.25),transparent 55%);pointer-events:none}
 .voice-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
 .voice-title-box h3{font-family:var(--font-heading);font-size:20px;color:var(--gold)}
@@ -66,32 +66,39 @@ body{font-family:var(--font-body);color:var(--text-main);direction:rtl;text-alig
 .voice-controls-top{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .voice-shuffle-pill{background:rgba(255,255,255,.1);border:1px solid var(--card-border);color:var(--text-main);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer}
 .voice-shuffle-pill:active{transform:scale(.94)}
-.voice-player-container{display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(0,0,0,.32);border-radius:50px;padding:8px 12px;box-shadow:inset 0 3px 8px rgba(0,0,0,.45)}
-.voice-nav-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--card-border);background:rgba(255,255,255,.08);color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s,background .15s}
-.voice-nav-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}
-.voice-seek-btn{font-size:11px;font-weight:800;color:var(--gold);letter-spacing:-0.5px}
-.voice-speed-pill{background:rgba(255,255,255,.1);border:1px solid var(--card-border);color:var(--gold);padding:4px 8px;border-radius:14px;font-size:11px;font-weight:800;cursor:pointer;transition:transform .12s,background .15s}
-.voice-speed-pill:active{transform:scale(.92);background:rgba(255,255,255,.25)}
-.voice-play-btn{width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;color:#fff;font-size:20px;
-  background:radial-gradient(circle at 35% 28%,#ffb3c6,#ff3d6e 55%,#b0123f);box-shadow:0 6px 0 #7d0e32,0 12px 20px rgba(255,60,110,.5),inset 0 2px 3px rgba(255,255,255,.6);transition:transform .12s,box-shadow .12s}
-.voice-play-btn:active{transform:translateY(5px);box-shadow:0 1px 0 #7d0e32,0 4px 8px rgba(255,60,110,.4)}
-.voice-timeline-box{display:flex;align-items:center;gap:10px;margin-top:12px;padding:2px 4px}
-.voice-time-text{font-size:11px;font-weight:800;color:var(--gold);min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
-.voice-slider-wrapper{position:relative;flex:1;display:flex;align-items:center;height:22px}
-.voice-range-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:rgba(255,255,255,.16);outline:none;cursor:pointer;position:relative;z-index:2;margin:0}
-.voice-range-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#ff3d6e);box-shadow:0 0 10px rgba(255,61,110,.9),0 2px 4px rgba(0,0,0,.4);cursor:pointer;border:2px solid #fff;transition:transform .12s}
-.voice-range-slider::-webkit-slider-thumb:active{transform:scale(1.3)}
-.voice-range-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#ff3d6e;border:2px solid #fff;cursor:pointer}
-.voice-slider-fill{position:absolute;left:0;top:50%;transform:translateY(-50%);height:6px;border-radius:6px;background:linear-gradient(90deg,#ff8fab,#ff3d6e);pointer-events:none;z-index:1;width:0%}
-.sound-waves{display:flex;align-items:center;gap:4px;height:24px}
-.wave-bar{width:4px;height:8px;background:rgba(255,160,190,.35);border-radius:4px}
-.sound-waves.playing .wave-bar{background:var(--gold);animation:waveBounce 1s infinite ease-in-out alternate}
-.sound-waves.playing .wave-bar:nth-child(2){animation-delay:.15s}.sound-waves.playing .wave-bar:nth-child(3){animation-delay:.3s}
-.sound-waves.playing .wave-bar:nth-child(4){animation-delay:.45s}.sound-waves.playing .wave-bar:nth-child(5){animation-delay:.2s}
-.sound-waves.playing .wave-bar:nth-child(6){animation-delay:.5s}.sound-waves.playing .wave-bar:nth-child(7){animation-delay:.35s}
-.sound-waves.playing .wave-bar:nth-child(8){animation-delay:.1s}
-@keyframes waveBounce{from{height:6px}to{height:22px}}
-.voice-timer{font-weight:800;font-size:13px;color:var(--gold);min-width:42px;text-align:left}
+
+/* Primary Action Buttons (Hero Center) */
+.voice-main-controls{display:flex;align-items:center;justify-content:center;gap:18px;margin:12px 0 16px}
+.voice-circle-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.04));border:1.5px solid var(--card-border);color:#fff;cursor:pointer;box-shadow:0 6px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.2);transition:all .15s}
+.voice-circle-btn:active{transform:scale(.9);box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.voice-circle-btn .btn-icon{font-size:17px;font-weight:900;color:var(--gold)}
+.voice-circle-btn .btn-text{font-size:9.5px;font-weight:800;color:rgba(255,255,255,.85);margin-top:1px}
+
+.voice-play-hero{width:66px;height:66px;border-radius:50%;border:none;cursor:pointer;color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 35% 28%,#ffb3c6,#ff3d6e 55%,#b0123f);box-shadow:0 8px 0 #7d0e32,0 16px 26px rgba(255,60,110,.5),inset 0 2px 4px rgba(255,255,255,.7);transition:transform .12s,box-shadow .12s}
+.voice-play-hero:active{transform:translateY(6px);box-shadow:0 2px 0 #7d0e32,0 6px 12px rgba(255,60,110,.4)}
+
+/* Custom Luxury Scrubber Bar */
+.voice-scrub-box{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.38);border-radius:30px;padding:9px 12px;border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 3px 8px rgba(0,0,0,.55);direction:ltr}
+.voice-badge-time{font-size:12px;font-weight:800;color:var(--gold);min-width:36px;text-align:center;font-variant-numeric:tabular-nums;user-select:none}
+.voice-track-hitbox{position:relative;flex:1;height:38px;display:flex;align-items:center;cursor:pointer;touch-action:none;user-select:none}
+.voice-track-rail{position:relative;width:100%;height:8px;border-radius:8px;background:rgba(255,255,255,.18);overflow:visible}
+.voice-track-fill{position:absolute;left:0;top:0;height:100%;border-radius:8px;background:linear-gradient(90deg,#ff8fab,#ff3d6e,#ffb3c6);box-shadow:0 0 10px rgba(255,61,110,.9);width:0%}
+.voice-track-thumb{position:absolute;top:50%;left:0%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#ff3d6e);border:2.5px solid #fff;box-shadow:0 0 14px rgba(255,61,110,1),0 2px 6px rgba(0,0,0,.5);pointer-events:none;transition:transform .1s}
+.voice-track-hitbox:active .voice-track-thumb{transform:translate(-50%,-50%) scale(1.3)}
+.voice-scrub-hint{text-align:center;font-size:11px;color:rgba(255,255,255,.5);margin:6px 0 12px;user-select:none}
+
+/* Waveform integrated inside track hitbox */
+.voice-track-hitbox .sound-waves{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:space-around;opacity:.28;padding:0 8px}
+.voice-track-hitbox .wave-bar{width:3px;height:8px;background:var(--gold);border-radius:3px}
+.voice-track-hitbox .sound-waves.playing{opacity:.65}
+.voice-track-hitbox .sound-waves.playing .wave-bar{animation:waveBounce .8s infinite ease-in-out alternate}
+
+/* Secondary Navigation & Speed Controls */
+.voice-sub-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.voice-pill-action{flex:1;background:rgba(255,255,255,.08);border:1px solid var(--card-border);color:var(--text-main);padding:8px 6px;border-radius:24px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.voice-pill-action:active{transform:scale(.94);background:rgba(255,255,255,.2)}
+.voice-pill-action.speed-pill{color:var(--gold);font-weight:800;border-color:rgba(243,207,154,.45);background:rgba(255,93,134,.16)}
 
 /* ---- Countdown: glossy tiles ---- */
 .countdown-box{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:6px 0 14px}

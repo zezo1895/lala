@@ -230,21 +230,23 @@ function initVoicePlayer() {
     const audioElement = document.getElementById("mainAudioElement");
     const emptyHint = document.getElementById("voiceEmptyHint");
 
-    // Interactive timeline & controls elements
+    // Luxury Scrubber & Controls
+    const trackWrapper = document.getElementById("voiceTrackWrapper");
+    const trackFill = document.getElementById("voiceTrackFill");
+    const trackThumb = document.getElementById("voiceTrackThumb");
+    const currentTimeEl = document.getElementById("voiceCurrentTime");
+    const totalTimeEl = document.getElementById("voiceTotalTime");
     const seekBackBtn = document.getElementById("btnSeekBack");
     const seekForwardBtn = document.getElementById("btnSeekForward");
     const speedBtn = document.getElementById("btnVoiceSpeed");
-    const seekSlider = document.getElementById("voiceSeekSlider");
-    const sliderFill = document.getElementById("voiceSliderFill");
-    const currentTimeEl = document.getElementById("voiceCurrentTime");
-    const totalTimeEl = document.getElementById("voiceTotalTime");
+    const speedLabel = document.getElementById("speedLabelText");
 
     const speeds = [1, 1.25, 1.5, 2];
     let currentSpeedIdx = 0;
-    let isUserScrubbing = false;
+    let isDraggingScrubber = false;
 
     function formatVoiceTime(sec) {
-        if (isNaN(sec) || sec < 0) return "00:00";
+        if (isNaN(sec) || sec < 0 || !isFinite(sec)) return "00:00";
         const m = Math.floor(sec / 60);
         const s = Math.floor(sec % 60);
         return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
@@ -252,17 +254,38 @@ function initVoicePlayer() {
 
     const voices = appData.voiceNotes || [];
 
+    function getVoiceDuration() {
+        if (audioElement.duration && isFinite(audioElement.duration) && audioElement.duration > 0) {
+            return audioElement.duration;
+        }
+        const curVn = voices[currentVoiceIndex] || {};
+        if (curVn.duration && isFinite(curVn.duration) && curVn.duration > 0) {
+            return curVn.duration;
+        }
+        if (curVn._dur && isFinite(curVn._dur) && curVn._dur > 0) {
+            return curVn._dur;
+        }
+        return 0;
+    }
+
+    function updateProgressUI(currentTime, totalDuration) {
+        if (currentTimeEl) currentTimeEl.textContent = formatVoiceTime(currentTime);
+        if (totalDuration > 0) {
+            if (totalTimeEl) totalTimeEl.textContent = formatVoiceTime(totalDuration);
+            const pct = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
+            if (trackFill) trackFill.style.width = pct + "%";
+            if (trackThumb) trackThumb.style.left = pct + "%";
+        }
+    }
+
     function loadVoice(index, autoPlay = false) {
         if (!voices || voices.length === 0) {
-            emptyHint.style.display = "block";
+            if (emptyHint) emptyHint.style.display = "block";
             titleEl.textContent = "فويس نوت من حبيبك 🎙️❤️";
             subEl.textContent = "اسمعي صوتي لما توحشيني";
             if (counterBadge) counterBadge.textContent = "0 من 0";
             audioElement.src = "";
-            if (currentTimeEl) currentTimeEl.textContent = "00:00";
-            if (totalTimeEl) totalTimeEl.textContent = "00:00";
-            if (seekSlider) seekSlider.value = 0;
-            if (sliderFill) sliderFill.style.width = "0%";
+            updateProgressUI(0, 0);
             return;
         }
 
@@ -275,32 +298,30 @@ function initVoicePlayer() {
             counterBadge.textContent = `${currentVoiceIndex + 1} من ${voices.length}`;
         }
 
-        if (seekSlider) seekSlider.value = 0;
-        if (sliderFill) sliderFill.style.width = "0%";
-        if (currentTimeEl) currentTimeEl.textContent = "00:00";
+        updateProgressUI(0, getVoiceDuration());
 
         if (currentVoice.audioSrc) {
             audioElement.src = currentVoice.audioSrc;
             audioElement.playbackRate = speeds[currentSpeedIdx];
-            emptyHint.style.display = "none";
+            if (emptyHint) emptyHint.style.display = "none";
             if (autoPlay) {
                 audioElement.play().then(() => {
                     isPlayingVoice = true;
-                    playIcon.textContent = "❚❚";
-                    soundWaves.classList.add("playing");
+                    if (playIcon) playIcon.textContent = "❚❚";
+                    if (soundWaves) soundWaves.classList.add("playing");
                 }).catch(console.error);
             } else {
                 isPlayingVoice = false;
-                playIcon.textContent = "▶";
-                soundWaves.classList.remove("playing");
+                if (playIcon) playIcon.textContent = "▶";
+                if (soundWaves) soundWaves.classList.remove("playing");
             }
         } else {
             audioElement.src = "";
-            emptyHint.style.display = "block";
+            if (emptyHint) emptyHint.style.display = "block";
             if (totalTimeEl) totalTimeEl.textContent = "00:00";
             isPlayingVoice = false;
-            playIcon.textContent = "▶";
-            soundWaves.classList.remove("playing");
+            if (playIcon) playIcon.textContent = "▶";
+            if (soundWaves) soundWaves.classList.remove("playing");
         }
     }
 
@@ -318,83 +339,119 @@ function initVoicePlayer() {
         if (navigator.vibrate) navigator.vibrate(30);
     }
 
-    // Audio metadata
-    audioElement.onloadedmetadata = () => {
-        const dur = audioElement.duration || 0;
-        if (totalTimeEl) totalTimeEl.textContent = formatVoiceTime(dur);
-        if (currentTimeEl) currentTimeEl.textContent = formatVoiceTime(audioElement.currentTime);
-        if (seekSlider) {
-            seekSlider.value = 0;
-            if (sliderFill) sliderFill.style.width = "0%";
-        }
-    };
-
-    audioElement.ontimeupdate = () => {
-        if (isUserScrubbing) return;
-        const cur = audioElement.currentTime || 0;
-        const dur = audioElement.duration || 0;
-        if (currentTimeEl) currentTimeEl.textContent = formatVoiceTime(cur);
-        if (dur > 0 && seekSlider) {
-            const pct = (cur / dur) * 100;
-            seekSlider.value = pct;
-            if (sliderFill) sliderFill.style.width = `${pct}%`;
-        }
-    };
-
-    // Timeline Drag / Scrubbing Handlers
-    if (seekSlider) {
-        const applySeek = (commit) => {
-            const dur = audioElement.duration || 0;
-            if (dur > 0) {
-                const targetTime = (parseFloat(seekSlider.value) / 100) * dur;
-                if (currentTimeEl) currentTimeEl.textContent = formatVoiceTime(targetTime);
-                if (sliderFill) sliderFill.style.width = `${seekSlider.value}%`;
-                if (commit) {
-                    audioElement.currentTime = targetTime;
+    // Audio metadata & Chromium webm duration hack
+    function checkAudioDuration() {
+        if (audioElement.duration === Infinity) {
+            // Force Chromium to compute webm duration
+            audioElement.currentTime = 1e101;
+            audioElement.ontimeupdate = () => {
+                audioElement.ontimeupdate = handleTimeUpdate;
+                audioElement.currentTime = 0;
+                const d = audioElement.duration;
+                if (isFinite(d) && d > 0) {
+                    if (voices[currentVoiceIndex]) voices[currentVoiceIndex]._dur = d;
+                    if (totalTimeEl) totalTimeEl.textContent = formatVoiceTime(d);
                 }
+            };
+        } else if (isFinite(audioElement.duration) && audioElement.duration > 0) {
+            if (voices[currentVoiceIndex]) voices[currentVoiceIndex]._dur = audioElement.duration;
+            if (totalTimeEl) totalTimeEl.textContent = formatVoiceTime(audioElement.duration);
+        }
+    }
+
+    audioElement.onloadedmetadata = checkAudioDuration;
+    audioElement.ondurationchange = checkAudioDuration;
+
+    function handleTimeUpdate() {
+        if (isDraggingScrubber) return;
+        const cur = audioElement.currentTime || 0;
+        const dur = getVoiceDuration();
+        updateProgressUI(cur, dur);
+    }
+    audioElement.ontimeupdate = handleTimeUpdate;
+
+    // Custom Luxury Scrubber Drag & Click
+    function seekToPointer(e, commit = false) {
+        if (!trackWrapper) return;
+        const rect = trackWrapper.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let pct = (clientX - rect.left) / rect.width;
+        pct = Math.max(0, Math.min(1, pct));
+
+        let dur = getVoiceDuration();
+        if (!dur || dur <= 0) dur = 30; // fallback
+
+        const targetTime = pct * dur;
+        updateProgressUI(targetTime, dur);
+
+        if (commit) {
+            try {
+                audioElement.currentTime = targetTime;
+            } catch (err) {
+                console.warn("Seek error:", err);
+            }
+        }
+    }
+
+    if (trackWrapper) {
+        trackWrapper.addEventListener("pointerdown", (e) => {
+            isDraggingScrubber = true;
+            trackWrapper.setPointerCapture(e.pointerId);
+            seekToPointer(e, true);
+        });
+
+        trackWrapper.addEventListener("pointermove", (e) => {
+            if (!isDraggingScrubber) return;
+            seekToPointer(e, true);
+        });
+
+        const endDrag = (e) => {
+            if (isDraggingScrubber) {
+                seekToPointer(e, true);
+                isDraggingScrubber = false;
+                try { trackWrapper.releasePointerCapture(e.pointerId); } catch (err) {}
             }
         };
 
-        seekSlider.addEventListener("input", () => {
-            isUserScrubbing = true;
-            applySeek(false);
-        });
-
-        seekSlider.addEventListener("change", () => {
-            applySeek(true);
-            isUserScrubbing = false;
-        });
-
-        seekSlider.addEventListener("touchend", () => {
-            setTimeout(() => { isUserScrubbing = false; }, 100);
-        });
+        trackWrapper.addEventListener("pointerup", endDrag);
+        trackWrapper.addEventListener("pointercancel", () => { isDraggingScrubber = false; });
     }
 
     // Rewind 5 seconds
     if (seekBackBtn) {
-        seekBackBtn.onclick = () => {
-            if (!audioElement.duration) return;
-            audioElement.currentTime = Math.max(0, audioElement.currentTime - 5);
-            if (navigator.vibrate) navigator.vibrate(20);
+        seekBackBtn.onclick = (e) => {
+            e.preventDefault();
+            const cur = audioElement.currentTime || 0;
+            const dur = getVoiceDuration() || 30;
+            const newTime = Math.max(0, cur - 5);
+            try { audioElement.currentTime = newTime; } catch (err) {}
+            updateProgressUI(newTime, dur);
+            if (navigator.vibrate) navigator.vibrate(25);
         };
     }
 
     // Forward 5 seconds
     if (seekForwardBtn) {
-        seekForwardBtn.onclick = () => {
-            if (!audioElement.duration) return;
-            audioElement.currentTime = Math.min(audioElement.duration, audioElement.currentTime + 5);
-            if (navigator.vibrate) navigator.vibrate(20);
+        seekForwardBtn.onclick = (e) => {
+            e.preventDefault();
+            const cur = audioElement.currentTime || 0;
+            const dur = getVoiceDuration() || 30;
+            const newTime = Math.min(dur, cur + 5);
+            try { audioElement.currentTime = newTime; } catch (err) {}
+            updateProgressUI(newTime, dur);
+            if (navigator.vibrate) navigator.vibrate(25);
         };
     }
 
-    // Playback Speed Toggle (1x, 1.25x, 1.5x, 2x)
+    // Speed Toggle
     if (speedBtn) {
-        speedBtn.onclick = () => {
+        speedBtn.onclick = (e) => {
+            e.preventDefault();
             currentSpeedIdx = (currentSpeedIdx + 1) % speeds.length;
             const chosen = speeds[currentSpeedIdx];
             audioElement.playbackRate = chosen;
-            speedBtn.textContent = `${chosen}x`;
+            if (speedLabel) speedLabel.textContent = `⚡ ${chosen}x`;
+            showToast(`سرعة الصوت: ${chosen}x`);
             if (navigator.vibrate) navigator.vibrate(20);
         };
     }
@@ -405,11 +462,9 @@ function initVoicePlayer() {
             pickRandomVoice(true);
         } else {
             isPlayingVoice = false;
-            playIcon.textContent = "▶";
-            soundWaves.classList.remove("playing");
-            if (seekSlider) seekSlider.value = 0;
-            if (sliderFill) sliderFill.style.width = "0%";
-            if (currentTimeEl) currentTimeEl.textContent = "00:00";
+            if (playIcon) playIcon.textContent = "▶";
+            if (soundWaves) soundWaves.classList.remove("playing");
+            updateProgressUI(0, getVoiceDuration());
         }
     };
 
@@ -424,14 +479,14 @@ function initVoicePlayer() {
         if (isPlayingVoice) {
             audioElement.pause();
             isPlayingVoice = false;
-            playIcon.textContent = "▶";
-            soundWaves.classList.remove("playing");
+            if (playIcon) playIcon.textContent = "▶";
+            if (soundWaves) soundWaves.classList.remove("playing");
         } else {
             audioElement.playbackRate = speeds[currentSpeedIdx];
             audioElement.play().then(() => {
                 isPlayingVoice = true;
-                playIcon.textContent = "❚❚";
-                soundWaves.classList.add("playing");
+                if (playIcon) playIcon.textContent = "❚❚";
+                if (soundWaves) soundWaves.classList.add("playing");
                 if (navigator.vibrate) navigator.vibrate(40);
             }).catch(e => {
                 console.error("Playback error:", e);
