@@ -227,9 +227,28 @@ function initVoicePlayer() {
     const nextBtn = document.getElementById("btnNextVoice");
     const shuffleBtn = document.getElementById("btnShuffleVoice");
     const soundWaves = document.getElementById("soundWaveBars");
-    const timerDisplay = document.getElementById("voiceDurationDisplay");
     const audioElement = document.getElementById("mainAudioElement");
     const emptyHint = document.getElementById("voiceEmptyHint");
+
+    // Interactive timeline & controls elements
+    const seekBackBtn = document.getElementById("btnSeekBack");
+    const seekForwardBtn = document.getElementById("btnSeekForward");
+    const speedBtn = document.getElementById("btnVoiceSpeed");
+    const seekSlider = document.getElementById("voiceSeekSlider");
+    const sliderFill = document.getElementById("voiceSliderFill");
+    const currentTimeEl = document.getElementById("voiceCurrentTime");
+    const totalTimeEl = document.getElementById("voiceTotalTime");
+
+    const speeds = [1, 1.25, 1.5, 2];
+    let currentSpeedIdx = 0;
+    let isUserScrubbing = false;
+
+    function formatVoiceTime(sec) {
+        if (isNaN(sec) || sec < 0) return "00:00";
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
 
     const voices = appData.voiceNotes || [];
 
@@ -240,6 +259,10 @@ function initVoicePlayer() {
             subEl.textContent = "اسمعي صوتي لما توحشيني";
             if (counterBadge) counterBadge.textContent = "0 من 0";
             audioElement.src = "";
+            if (currentTimeEl) currentTimeEl.textContent = "00:00";
+            if (totalTimeEl) totalTimeEl.textContent = "00:00";
+            if (seekSlider) seekSlider.value = 0;
+            if (sliderFill) sliderFill.style.width = "0%";
             return;
         }
 
@@ -252,8 +275,13 @@ function initVoicePlayer() {
             counterBadge.textContent = `${currentVoiceIndex + 1} من ${voices.length}`;
         }
 
+        if (seekSlider) seekSlider.value = 0;
+        if (sliderFill) sliderFill.style.width = "0%";
+        if (currentTimeEl) currentTimeEl.textContent = "00:00";
+
         if (currentVoice.audioSrc) {
             audioElement.src = currentVoice.audioSrc;
+            audioElement.playbackRate = speeds[currentSpeedIdx];
             emptyHint.style.display = "none";
             if (autoPlay) {
                 audioElement.play().then(() => {
@@ -269,7 +297,7 @@ function initVoicePlayer() {
         } else {
             audioElement.src = "";
             emptyHint.style.display = "block";
-            timerDisplay.textContent = "00:00";
+            if (totalTimeEl) totalTimeEl.textContent = "00:00";
             isPlayingVoice = false;
             playIcon.textContent = "▶";
             soundWaves.classList.remove("playing");
@@ -292,16 +320,84 @@ function initVoicePlayer() {
 
     // Audio metadata
     audioElement.onloadedmetadata = () => {
-        const mins = Math.floor(audioElement.duration / 60);
-        const secs = Math.floor(audioElement.duration % 60);
-        timerDisplay.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        const dur = audioElement.duration || 0;
+        if (totalTimeEl) totalTimeEl.textContent = formatVoiceTime(dur);
+        if (currentTimeEl) currentTimeEl.textContent = formatVoiceTime(audioElement.currentTime);
+        if (seekSlider) {
+            seekSlider.value = 0;
+            if (sliderFill) sliderFill.style.width = "0%";
+        }
     };
 
     audioElement.ontimeupdate = () => {
-        const mins = Math.floor(audioElement.currentTime / 60);
-        const secs = Math.floor(audioElement.currentTime % 60);
-        timerDisplay.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        if (isUserScrubbing) return;
+        const cur = audioElement.currentTime || 0;
+        const dur = audioElement.duration || 0;
+        if (currentTimeEl) currentTimeEl.textContent = formatVoiceTime(cur);
+        if (dur > 0 && seekSlider) {
+            const pct = (cur / dur) * 100;
+            seekSlider.value = pct;
+            if (sliderFill) sliderFill.style.width = `${pct}%`;
+        }
     };
+
+    // Timeline Drag / Scrubbing Handlers
+    if (seekSlider) {
+        const applySeek = (commit) => {
+            const dur = audioElement.duration || 0;
+            if (dur > 0) {
+                const targetTime = (parseFloat(seekSlider.value) / 100) * dur;
+                if (currentTimeEl) currentTimeEl.textContent = formatVoiceTime(targetTime);
+                if (sliderFill) sliderFill.style.width = `${seekSlider.value}%`;
+                if (commit) {
+                    audioElement.currentTime = targetTime;
+                }
+            }
+        };
+
+        seekSlider.addEventListener("input", () => {
+            isUserScrubbing = true;
+            applySeek(false);
+        });
+
+        seekSlider.addEventListener("change", () => {
+            applySeek(true);
+            isUserScrubbing = false;
+        });
+
+        seekSlider.addEventListener("touchend", () => {
+            setTimeout(() => { isUserScrubbing = false; }, 100);
+        });
+    }
+
+    // Rewind 5 seconds
+    if (seekBackBtn) {
+        seekBackBtn.onclick = () => {
+            if (!audioElement.duration) return;
+            audioElement.currentTime = Math.max(0, audioElement.currentTime - 5);
+            if (navigator.vibrate) navigator.vibrate(20);
+        };
+    }
+
+    // Forward 5 seconds
+    if (seekForwardBtn) {
+        seekForwardBtn.onclick = () => {
+            if (!audioElement.duration) return;
+            audioElement.currentTime = Math.min(audioElement.duration, audioElement.currentTime + 5);
+            if (navigator.vibrate) navigator.vibrate(20);
+        };
+    }
+
+    // Playback Speed Toggle (1x, 1.25x, 1.5x, 2x)
+    if (speedBtn) {
+        speedBtn.onclick = () => {
+            currentSpeedIdx = (currentSpeedIdx + 1) % speeds.length;
+            const chosen = speeds[currentSpeedIdx];
+            audioElement.playbackRate = chosen;
+            speedBtn.textContent = `${chosen}x`;
+            if (navigator.vibrate) navigator.vibrate(20);
+        };
+    }
 
     // When audio finishes, automatically shuffle to another random voice!
     audioElement.onended = () => {
@@ -311,6 +407,9 @@ function initVoicePlayer() {
             isPlayingVoice = false;
             playIcon.textContent = "▶";
             soundWaves.classList.remove("playing");
+            if (seekSlider) seekSlider.value = 0;
+            if (sliderFill) sliderFill.style.width = "0%";
+            if (currentTimeEl) currentTimeEl.textContent = "00:00";
         }
     };
 
@@ -328,6 +427,7 @@ function initVoicePlayer() {
             playIcon.textContent = "▶";
             soundWaves.classList.remove("playing");
         } else {
+            audioElement.playbackRate = speeds[currentSpeedIdx];
             audioElement.play().then(() => {
                 isPlayingVoice = true;
                 playIcon.textContent = "❚❚";
