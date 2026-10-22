@@ -43,11 +43,14 @@
     const rim = new THREE.PointLight(0xff4f8b, 1.2, 10); rim.position.set(3, 1, -3); scene.add(rim);
 
     function fit() {
-      const w = box.clientWidth, h = box.clientHeight;
-      if (!w || !h) return;
-      r.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix();
+      const w = box.clientWidth || 230;
+      const h = box.clientHeight || 210;
+      r.setSize(w, h);
+      cam.aspect = w / h;
+      cam.updateProjectionMatrix();
     }
-    fit(); window.addEventListener("resize", fit);
+    fit();
+    window.addEventListener("resize", fit);
 
     let drag = false, lastX = 0, spin = 0, vel = 0;
     box.addEventListener("pointerdown", e => { drag = true; lastX = e.clientX; box.style.cursor = "grabbing"; });
@@ -124,19 +127,6 @@
 
   /* ========== 3) ميلان 3D للكروت مع الماوس ========== */
   if (!reduce && window.matchMedia("(hover:hover)").matches) {
-    document.addEventListener("pointermove", e => {
-      const el = e.target.closest && e.target.closest(".love-card, .voice-card");
-      document.querySelectorAll(".love-card[data-tilt], .voice-card[data-tilt]").forEach(c => {
-        if (c !== el) { c.style.transform = ""; c.removeAttribute("data-tilt"); }
-      });
-      if (!el) return;
-      const b = el.getBoundingClientRect();
-      const x = (e.clientX - b.left) / b.width - 0.5, y = (e.clientY - b.top) / b.height - 0.5;
-      el.setAttribute("data-tilt", "1");
-      el.style.transform = `rotateX(${(-y * 4).toFixed(2)}deg) rotateY(${(x * 5).toFixed(2)}deg)`;
-    });
-  }
-})();
     document.addEventListener("pointermove", e => {
       const el = e.target.closest && e.target.closest(".love-card, .voice-card");
       document.querySelectorAll(".love-card[data-tilt], .voice-card[data-tilt]").forEach(c => {
