@@ -257,25 +257,310 @@ footer span{color:var(--text-muted)!important}
 #skyCanvas{display:block;width:100%;height:330px;touch-action:manipulation}
 .sky-hint{font-size:12px;color:var(--text-muted);text-align:center;margin-top:8px}
 
-/* صندوق الهدية 3D */
-.gift-stage{height:190px;display:flex;align-items:center;justify-content:center;perspective:700px;cursor:pointer;margin-bottom:4px}
-.gift3d{--s:104px;position:relative;width:var(--s);height:var(--s);transform-style:preserve-3d;transform:rotateX(-24deg) rotateY(32deg);animation:giftFloat 4s ease-in-out infinite}
-@keyframes giftFloat{0%,100%{transform:rotateX(-24deg) rotateY(26deg) translateY(0)}50%{transform:rotateX(-24deg) rotateY(42deg) translateY(-8px)}}
-.gift3d .gf{position:absolute;width:var(--s);height:calc(var(--s)*.72);bottom:0;background:linear-gradient(90deg,transparent 42%,#f3cf9a 42%,#f3cf9a 58%,transparent 58%),linear-gradient(180deg,#ff6f95,#d81f55);border:1px solid rgba(255,255,255,.25)}
-.gift3d .gf1{transform:translateZ(calc(var(--s)/2))}
-.gift3d .gf2{transform:rotateY(180deg) translateZ(calc(var(--s)/2))}
-.gift3d .gf3{transform:rotateY(90deg) translateZ(calc(var(--s)/2))}
-.gift3d .gf4{transform:rotateY(-90deg) translateZ(calc(var(--s)/2))}
-.gift3d .gin{position:absolute;width:var(--s);height:var(--s);bottom:calc(var(--s)*.72 - var(--s));background:radial-gradient(circle,#ffd6e1,#8f1239);transform:rotateX(90deg) translateZ(calc(var(--s)*-.0));top:calc(var(--s)*.28);box-shadow:0 0 30px 6px rgba(255,93,134,.8)}
-.gift-lid{position:absolute;left:-6px;width:calc(var(--s) + 12px);height:calc(var(--s) + 12px);top:calc(var(--s)*.28 - 6px - 20px);transform-style:preserve-3d;transform-origin:50% 50% -50%;transition:transform .9s cubic-bezier(.3,1.4,.4,1)}
-.gift-lid .lt{position:absolute;inset:0;transform:rotateX(90deg) translateZ(14px);background:linear-gradient(90deg,#ff8fab 42%,#f3cf9a 42%,#f3cf9a 58%,#ff8fab 58%);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:30px}
-.gift-lid .ls{position:absolute;left:0;width:100%;height:28px;top:calc(var(--s)*0 + 0px);background:linear-gradient(90deg,transparent 42%,#f3cf9a 42%,#f3cf9a 58%,transparent 58%),#e83a6c;border:1px solid rgba(255,255,255,.25)}
-.gift-lid .ls1{transform:translateZ(calc(var(--s)/2 + 6px)) translateY(-14px)}
-.gift-lid .ls2{transform:rotateY(180deg) translateZ(calc(var(--s)/2 + 6px)) translateY(-14px)}
-.gift-lid .ls3{transform:rotateY(90deg) translateZ(calc(var(--s)/2 + 6px)) translateY(-14px)}
-.gift-lid .ls4{transform:rotateY(-90deg) translateZ(calc(var(--s)/2 + 6px)) translateY(-14px)}
-.gift-stage.open .gift-lid{transform:rotateX(-115deg) translateY(-10px)}
-.gift-note{text-align:center;font-size:13px;color:var(--text-muted)}
+/* ==================== صندوق الهدية الملكي الفاخر ==================== */
+.gift-stage {
+    position: relative;
+    height: 215px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    margin: 10px auto 4px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.gift-glow-aura {
+    position: absolute;
+    width: 210px;
+    height: 210px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 93, 134, 0.35) 0%, rgba(216, 31, 85, 0.12) 45%, transparent 70%);
+    filter: blur(14px);
+    pointer-events: none;
+    transition: transform 0.6s ease, opacity 0.6s ease;
+    animation: auraPulse 3.5s ease-in-out infinite;
+}
+
+@keyframes auraPulse {
+    0%, 100% { transform: scale(0.92); opacity: 0.6; }
+    50% { transform: scale(1.1); opacity: 0.95; }
+}
+
+.gift-box-scene {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: giftFloat 3.8s ease-in-out infinite;
+    transform-origin: center bottom;
+}
+
+@keyframes giftFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(-1.5deg); }
+}
+
+.gift-stage:active .gift-box-scene {
+    transform: scale(0.96);
+    transition: transform 0.15s ease;
+}
+
+/* ظل الصندوق */
+.gift-shadow {
+    position: absolute;
+    bottom: -18px;
+    width: 110px;
+    height: 20px;
+    background: radial-gradient(ellipse, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 72%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: giftShadowPulse 3.8s ease-in-out infinite;
+}
+
+@keyframes giftShadowPulse {
+    0%, 100% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(0.82); opacity: 0.4; }
+}
+
+/* جسم الصندوق */
+.gift-body-wrap {
+    position: absolute;
+    bottom: 0;
+    width: 104px;
+    height: 84px;
+    background: linear-gradient(145deg, #c41e4a 0%, #9e1439 45%, #6a0b25 100%);
+    border-radius: 6px 6px 14px 14px;
+    box-shadow: 
+        inset 0 2px 3px rgba(255, 255, 255, 0.35),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.4),
+        0 14px 28px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 180, 200, 0.25);
+    overflow: hidden;
+    z-index: 2;
+}
+
+/* أشرطة الصندوق الذهبية */
+.body-ribbon-v,
+.lid-ribbon-v {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 22px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, #c59737 0%, #fde088 28%, #fff4c2 50%, #fde088 72%, #b58327 100%);
+    box-shadow: 0 0 8px rgba(245, 207, 122, 0.4), inset 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+.body-ribbon-h,
+.lid-ribbon-h {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 18px;
+    transform: translateY(-50%);
+    background: linear-gradient(180deg, #c59737 0%, #fde088 28%, #fff4c2 50%, #fde088 72%, #b58327 100%);
+    box-shadow: 0 0 8px rgba(245, 207, 122, 0.4), inset 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+/* وميض داخل الصندوق عند الفتح */
+.gift-inner-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 30%, rgba(255, 230, 150, 0.95), rgba(255, 93, 134, 0.6) 55%, transparent 85%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.gift-inner-glow .inner-icon {
+    font-size: 28px;
+    filter: drop-shadow(0 0 8px #ffd700);
+    animation: innerHeartBeat 1.4s ease-in-out infinite;
+}
+
+@keyframes innerHeartBeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.18); }
+}
+
+/* غطاء الهدية */
+.gift-lid-wrap {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 118px;
+    height: 38px;
+    z-index: 10;
+    transform-origin: 15% 10%;
+    transition: transform 0.65s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.4s ease;
+}
+
+.gift-lid-cap {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 26px;
+    background: linear-gradient(145deg, #d82352 0%, #ad163e 50%, #7d0d2a 100%);
+    border-radius: 8px 8px 4px 4px;
+    box-shadow: 
+        inset 0 2px 3px rgba(255, 255, 255, 0.45),
+        0 6px 16px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 200, 220, 0.35);
+    overflow: hidden;
+}
+
+.gift-lid-cap .lid-ribbon-v {
+    width: 22px;
+}
+
+.gift-lid-cap .lid-ribbon-h {
+    height: 14px;
+}
+
+/* الفيونكة 🎀 */
+.gift-bow {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 12;
+    pointer-events: none;
+}
+
+.gift-bow .bow-center {
+    font-size: 34px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 10px rgba(253, 224, 136, 0.6));
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.gift-bow .bow-sparkle {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    font-size: 16px;
+    animation: sparkleTwinkle 1.8s ease-in-out infinite;
+}
+
+@keyframes sparkleTwinkle {
+    0%, 100% { transform: scale(0.7) rotate(0deg); opacity: 0.4; }
+    50% { transform: scale(1.25) rotate(25deg); opacity: 1; }
+}
+
+/* شعاع النور عند الفتح */
+.gift-light-beam {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%) scaleY(0);
+    width: 140px;
+    height: 160px;
+    background: radial-gradient(ellipse at 50% 100%, rgba(255, 240, 180, 0.75) 0%, rgba(255, 93, 134, 0.3) 45%, transparent 75%);
+    clip-path: polygon(30% 100%, 70% 100%, 100% 0%, 0% 0%);
+    opacity: 0;
+    transform-origin: bottom center;
+    transition: all 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+    pointer-events: none;
+    z-index: 4;
+}
+
+/* المفاجآت المتطايرة */
+.gift-surprise-burst {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.burst-item {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    font-size: 22px;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+    transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ----------------------------------------------------
+   حالة الفتح .gift-stage.open
+   ---------------------------------------------------- */
+.gift-stage.open .gift-glow-aura {
+    transform: scale(1.35);
+    opacity: 1;
+    background: radial-gradient(circle, rgba(255, 180, 200, 0.5) 0%, rgba(255, 93, 134, 0.25) 50%, transparent 75%);
+}
+
+.gift-stage.open .gift-lid-wrap {
+    transform: translate(-50%, -64px) rotate(-22deg) scale(1.05);
+}
+
+.gift-stage.open .gift-inner-glow {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.gift-stage.open .gift-light-beam {
+    opacity: 0.95;
+    transform: translateX(-50%) scaleY(1);
+}
+
+.gift-stage.open .burst-item.b1 {
+    opacity: 1;
+    transform: translate(-65px, -85px) scale(1.15) rotate(-14deg);
+    animation: burstFloat1 2.8s ease-in-out infinite alternate 0.6s;
+}
+
+.gift-stage.open .burst-item.b2 {
+    opacity: 1;
+    transform: translate(45px, -92px) scale(1.2) rotate(16deg);
+    animation: burstFloat2 3s ease-in-out infinite alternate 0.7s;
+}
+
+.gift-stage.open .burst-item.b3 {
+    opacity: 1;
+    transform: translate(-30px, -112px) scale(1.25) rotate(-6deg);
+    animation: burstFloat3 2.6s ease-in-out infinite alternate 0.8s;
+}
+
+.gift-stage.open .burst-item.b4 {
+    opacity: 1;
+    transform: translate(40px, -60px) scale(1.1) rotate(10deg);
+    animation: burstFloat4 3.2s ease-in-out infinite alternate 0.9s;
+}
+
+@keyframes burstFloat1 { 0% { transform: translate(-65px, -85px) scale(1.15) rotate(-14deg); } 100% { transform: translate(-68px, -95px) scale(1.2) rotate(-8deg); } }
+@keyframes burstFloat2 { 0% { transform: translate(45px, -92px) scale(1.2) rotate(16deg); } 100% { transform: translate(48px, -102px) scale(1.25) rotate(22deg); } }
+@keyframes burstFloat3 { 0% { transform: translate(-30px, -112px) scale(1.25) rotate(-6deg); } 100% { transform: translate(-28px, -122px) scale(1.3) rotate(-12deg); } }
+@keyframes burstFloat4 { 0% { transform: translate(40px, -60px) scale(1.1) rotate(10deg); } 100% { transform: translate(44px, -70px) scale(1.15) rotate(4deg); } }
+
+.gift-note {
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+    margin-top: 6px;
+}
+.gift-stage.open + .gift-note {
+    color: var(--primary-light, #ff8fab);
+    font-weight: 600;
+}
 
 /* خريطة المسافة */
 .distance-svg{width:100%;height:auto;display:block}
