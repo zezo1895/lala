@@ -179,16 +179,8 @@
   function gift() {
     const st = $("giftStage"); if (!st) return;
     st.addEventListener("click", () => {
-      const open = st.classList.toggle("open");
-      $("giftNote").textContent = open ? "الجوابات تحت ✨ اختاري الجواب اللي نفسك تقريه" : "دوسي على الهدية عشان تتفتح 🎁";
-      if (open && typeof confetti !== "undefined") {
-        const b = st.getBoundingClientRect();
-        const sList = getShapes(["❤️", "🌹"]);
-        const gOpts = { particleCount: 70, spread: 80, startVelocity: 32, gravity: .8, scalar: 1.7, zIndex: 600,
-          origin: { x: (b.left + b.width / 2) / innerWidth, y: (b.top + 40) / innerHeight } };
-        if (sList) gOpts.shapes = sList;
-        confetti(gOpts);
-        setTimeout(() => $("lockedLettersList").scrollIntoView({ behavior: "smooth", block: "start" }), 900);
+      if (typeof window.toggleGiftBox === "function") {
+        window.toggleGiftBox();
       }
     });
   }

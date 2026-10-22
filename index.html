@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=2.7">
+    <link rel="stylesheet" href="style.css?v=2.8">
 </head>
 <body>
 
@@ -363,9 +363,16 @@
                         <span>✨ اسحبي للّف 3D • اضغطي لفتح الهدية 🎀</span>
                     </div>
                 </div>
-                <p class="gift-note" id="giftNote">دوسي على الهدية عشان تتفتح 🎁</p>
-                <div id="lockedLettersList">
-                    <!-- Populated dynamically -->
+                <p class="gift-note" id="giftNote">دوسي على الهدية عشان تتفتح والجوابات تظهر 🎁</p>
+
+                <!-- Letters Drawer (يظهر عند فتح الهدية) -->
+                <div id="lockedLettersContainer" class="letters-drawer">
+                    <div class="letters-drawer-badge">
+                        <span>💌 الجوابات السرية اللي سايبها ليكي زيزو:</span>
+                    </div>
+                    <div id="lockedLettersList">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
             </div>
         </main>
@@ -811,9 +818,9 @@
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="default-data.js?v=2.7"></script>
-    <script src="app.js?v=2.7"></script>
-    <script src="romance3d.js?v=2.7"></script>
-    <script src="extras.js?v=2.7"></script>
+    <script src="default-data.js?v=2.8"></script>
+    <script src="app.js?v=2.8"></script>
+    <script src="romance3d.js?v=2.8"></script>
+    <script src="extras.js?v=2.8"></script>
 </body>
 </html>

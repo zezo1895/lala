@@ -316,11 +316,71 @@
       sparkles.push(sp);
     }
 
+    // دالة الفتح والإغلاق الموحدة والمحمية من التكرار
+    let lastToggle = 0;
+    window.toggleGiftBox = function(force) {
+      const now = Date.now();
+      if (now - lastToggle < 300) return;
+      lastToggle = now;
+
+      const st = document.getElementById("giftStage");
+      if (!st) return;
+      const currentlyOpen = st.classList.contains("open");
+      const open = (typeof force === "boolean") ? force : !currentlyOpen;
+
+      if (open) {
+        st.classList.add("open");
+      } else {
+        st.classList.remove("open");
+      }
+
+      const drawer = document.getElementById("lockedLettersContainer");
+      if (drawer) {
+        if (open) {
+          drawer.classList.add("visible");
+        } else {
+          drawer.classList.remove("visible");
+        }
+      }
+
+      const note = document.getElementById("giftNote");
+      if (note) {
+        note.textContent = open 
+          ? "الجوابات ظهرت ليكي تحت 💌 اختاري الجواب واقريه (اضغطي لقفل الهدية)" 
+          : "دوسي على الهدية عشان تتفتح والجوابات تظهر 🎁";
+      }
+
+      if (open && typeof confetti !== "undefined") {
+        const b = st.getBoundingClientRect();
+        const sList = (typeof getShapes === "function") ? getShapes(["❤️", "🌹"]) : null;
+        const gOpts = {
+          particleCount: 75,
+          spread: 85,
+          startVelocity: 34,
+          gravity: 0.8,
+          scalar: 1.7,
+          zIndex: 600,
+          origin: { x: (b.left + b.width / 2) / innerWidth, y: (b.top + 50) / innerHeight }
+        };
+        if (sList) gOpts.shapes = sList;
+        confetti(gOpts);
+
+        setTimeout(() => {
+          const target = document.getElementById("lockedLettersContainer") || document.getElementById("lockedLettersList");
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 650);
+      }
+
+      return open;
+    };
+
     // تفاعل التدوير والضغط باللمس والماوس
     let lidProgress = 0;
     let rotY = 0.5, rotX = 0.22;
     let velY = 0, velX = 0;
-    let isDragging = false, startX = 0, startY = 0, lastX = 0, lastY = 0, dragDist = 0;
+    let isDragging = false, hasDragged = false, startX = 0, startY = 0, lastX = 0, lastY = 0, dragDist = 0;
 
     const canvas = renderer.domElement;
 
@@ -329,7 +389,8 @@
       startX = e.clientX; startY = e.clientY;
       lastX = e.clientX; lastY = e.clientY;
       dragDist = 0;
-      canvas.setPointerCapture(e.pointerId);
+      hasDragged = false;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
     });
 
     canvas.addEventListener("pointermove", e => {
@@ -337,6 +398,9 @@
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       dragDist += Math.hypot(dx, dy);
+      if (dragDist > 6) {
+        hasDragged = true;
+      }
       velY = dx * 0.012;
       velX = dy * 0.008;
       rotY += velY;
@@ -350,23 +414,28 @@
       if (!isDragging) return;
       isDragging = false;
       try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
-      if (dragDist < 8) {
-        giftStage.click();
+      if (!hasDragged) {
+        window.toggleGiftBox();
       }
     };
     canvas.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListener("pointercancel", onPointerUp);
+    canvas.addEventListener("pointercancel", () => { isDragging = false; });
 
+    // منع ارتداد حدث click الأصلي لمنع التكرار
     canvas.addEventListener("click", e => {
-      if (dragDist >= 8) {
-        e.stopPropagation();
-        e.preventDefault();
-      }
+      e.stopPropagation();
+      e.preventDefault();
     }, true);
+
+    giftStage.addEventListener("click", e => {
+      if (e.target !== canvas) {
+        window.toggleGiftBox();
+      }
+    });
 
     const giftNote = document.getElementById("giftNote");
     if (giftNote) {
-      giftNote.addEventListener("click", () => giftStage.click());
+      giftNote.addEventListener("click", () => window.toggleGiftBox());
     }
 
     let lastW = 0, lastH = 0;
