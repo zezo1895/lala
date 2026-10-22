@@ -142,7 +142,12 @@
       }));
     }
     function draw(t) {
-      requestAnimationFrame(draw); if (!W) { build(); return; } ctx.clearRect(0, 0, W, H);
+      requestAnimationFrame(draw);
+      if (document.hidden) return;
+      if (!W) { build(); return; }
+      const rect = cv.getBoundingClientRect();
+      if (rect.width === 0 || rect.bottom < -20 || rect.top > window.innerHeight + 20) return;
+      ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#fff";
       bg.forEach(s => { ctx.globalAlpha = .35 + .5 * Math.abs(Math.sin(t / 900 + s.p)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); });
       name.forEach(s => { ctx.globalAlpha = .65 + .35 * Math.sin(t / 600 + s.p); ctx.fillStyle = "#ffd6e1"; ctx.beginPath(); ctx.arc(s.x, s.y, 1.3, 0, 7); ctx.fill(); });

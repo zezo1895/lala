@@ -957,52 +957,9 @@ function triggerConfetti(massive = false) {
 }
 
 function initCanvasHearts() {
+    // تم إلغاء حلقة الرسم الثنائية المكررة لتوفير 100% من استهلاك المعالج لصالح البتلات ثلاثية الأبعاد
     const canvas = document.getElementById("heartsCanvas");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-
-    let width = canvas.width = window.innerWidth;
-    let height = canvas.height = window.innerHeight;
-
-    window.addEventListener("resize", () => {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-    });
-
-    const hearts = [];
-    const maxHearts = 16;
-
-    for (let i = 0; i < maxHearts; i++) {
-        hearts.push({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            size: Math.random() * 12 + 8,
-            speedY: Math.random() * 0.6 + 0.3,
-            opacity: Math.random() * 0.4 + 0.15,
-            wiggle: Math.random() * 10
-        });
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, width, height);
-        hearts.forEach(h => {
-            h.y -= h.speedY;
-            h.wiggle += 0.02;
-            const x = h.x + Math.sin(h.wiggle) * 1.5;
-
-            if (h.y < -20) {
-                h.y = height + 20;
-                h.x = Math.random() * width;
-            }
-
-            ctx.fillStyle = `rgba(255, 45, 85, ${h.opacity})`;
-            ctx.font = `${h.size}px serif`;
-            ctx.fillText("❤️", x, h.y);
-        });
-        requestAnimationFrame(draw);
-    }
-
-    draw();
+    if (canvas) canvas.style.display = "none";
 }
 
 // ==========================================
@@ -1790,18 +1747,15 @@ async function fetchRemoteGitHubData(manual = false) {
                     const localTime = appData && appData.updatedAt ? new Date(appData.updatedAt).getTime() : 0;
                     const remoteTime = remote.updatedAt ? new Date(remote.updatedAt).getTime() : 1;
 
-                    if (remoteTime >= localTime || manual) {
-                        const localStr = JSON.stringify(appData);
-                        const remoteStr = JSON.stringify(remote);
-                        if (localStr !== remoteStr || manual) {
-                            appData = remote;
-                            localStorage.setItem("yara_army_app_data", JSON.stringify(appData));
-                            refreshAllUI();
-                            if (manual) {
-                                showToast("✅ تم سحب أحدث نسخة بنجاح من GitHub! ❤️");
-                            } else {
-                                showToast("✨ تم استلام أحدث الرسايل والتحديثات من زيزو! ❤️");
-                            }
+                    // مقارنة زمنية خفيفة بدون استهلاك المعالج في stringify
+                    if (manual || remoteTime > localTime || (!localTime && remote.updatedAt)) {
+                        appData = remote;
+                        localStorage.setItem("yara_army_app_data", JSON.stringify(appData));
+                        refreshAllUI();
+                        if (manual) {
+                            showToast("✅ تم سحب أحدث نسخة بنجاح من GitHub! ❤️");
+                        } else {
+                            showToast("✨ تم استلام أحدث الرسايل والتحديثات من زيزو! ❤️");
                         }
                     }
                     return true;
