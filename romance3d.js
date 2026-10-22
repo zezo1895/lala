@@ -139,4 +139,313 @@
       el.style.transform = `rotateX(${(-y * 4).toFixed(2)}deg) rotateY(${(x * 5).toFixed(2)}deg)`;
     });
   }
+
+  /* ========== 4) صندوق الهدية 3D الحقيقي (Three.js WebGL) ========== */
+  const giftBox = document.getElementById("gift3dContainer");
+  const giftStage = document.getElementById("giftStage");
+  if (giftBox && giftStage) {
+    const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(dpr);
+    giftBox.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 50);
+    camera.position.set(0, 1.25, 4.4);
+    camera.lookAt(0, 0, 0);
+
+    // الإضاءة
+    const amb = new THREE.AmbientLight(0xffe4ec, 0.85);
+    scene.add(amb);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.25);
+    dir.position.set(3, 5, 4);
+    scene.add(dir);
+    const goldPt = new THREE.PointLight(0xf7d58a, 1.1, 10);
+    goldPt.position.set(-2.5, 2, 2.5);
+    scene.add(goldPt);
+    const rimPt = new THREE.PointLight(0xff2a7a, 0.9, 10);
+    rimPt.position.set(2.5, -0.5, -2.5);
+    scene.add(rimPt);
+    const innerPt = new THREE.PointLight(0xffd700, 0.1, 5);
+    innerPt.position.set(0, 0.4, 0);
+    scene.add(innerPt);
+
+    // الخامات الفاخرة
+    const velvetMat = new THREE.MeshStandardMaterial({
+      color: 0x9e1236,
+      roughness: 0.35,
+      metalness: 0.14,
+      emissive: 0x1a0208
+    });
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xf6cb6a,
+      roughness: 0.22,
+      metalness: 0.82
+    });
+    const insideMat = new THREE.MeshStandardMaterial({
+      color: 0x3d0312,
+      roughness: 0.7,
+      metalness: 0.05
+    });
+
+    // المجموعة الأساسية
+    const rootGroup = new THREE.Group();
+    scene.add(rootGroup);
+
+    // ظل الصندوق على الأرض بتدرج ناعم
+    const shadowCanvas = document.createElement("canvas");
+    shadowCanvas.width = 128; shadowCanvas.height = 128;
+    const sctx = shadowCanvas.getContext("2d");
+    const grad = sctx.createRadialGradient(64, 64, 10, 64, 64, 60);
+    grad.addColorStop(0, "rgba(5, 1, 3, 0.75)");
+    grad.addColorStop(0.5, "rgba(5, 1, 3, 0.35)");
+    grad.addColorStop(1, "rgba(5, 1, 3, 0)");
+    sctx.fillStyle = grad;
+    sctx.fillRect(0, 0, 128, 128);
+    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+    const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
+    const shadowMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = -0.66;
+    rootGroup.add(shadowMesh);
+
+    // جسم الصندوق
+    const bodyGroup = new THREE.Group();
+    rootGroup.add(bodyGroup);
+    const boxBase = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.1, 1.4), velvetMat);
+    bodyGroup.add(boxBase);
+    const ribbonV1 = new THREE.Mesh(new THREE.BoxGeometry(1.41, 1.11, 0.24), goldMat);
+    bodyGroup.add(ribbonV1);
+    const ribbonV2 = new THREE.Mesh(new THREE.BoxGeometry(0.24, 1.11, 1.41), goldMat);
+    bodyGroup.add(ribbonV2);
+    const innerCavity = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.05, 1.28), insideMat);
+    innerCavity.position.y = 0.53;
+    bodyGroup.add(innerCavity);
+
+    // غطاء الصندوق (Lid Group)
+    const lidGroup = new THREE.Group();
+    lidGroup.position.set(0, 0.56, 0);
+    rootGroup.add(lidGroup);
+
+    const lidCap = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.22, 1.5), velvetMat);
+    lidCap.position.y = 0.11;
+    lidGroup.add(lidCap);
+    const lidRib1 = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.23, 0.24), goldMat);
+    lidRib1.position.y = 0.11;
+    lidGroup.add(lidRib1);
+    const lidRib2 = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.23, 1.52), goldMat);
+    lidRib2.position.y = 0.11;
+    lidGroup.add(lidRib2);
+
+    // الفيونكة الذهبية 3D
+    const bowGroup = new THREE.Group();
+    bowGroup.position.set(0, 0.23, 0);
+    lidGroup.add(bowGroup);
+
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), goldMat);
+    bowGroup.add(knot);
+
+    const loopGeo = new THREE.TorusGeometry(0.19, 0.06, 12, 24, Math.PI * 1.55);
+    const l1 = new THREE.Mesh(loopGeo, goldMat);
+    l1.position.set(-0.16, 0.14, 0); l1.rotation.set(0.35, 0.75, 1.25);
+    bowGroup.add(l1);
+    const l2 = new THREE.Mesh(loopGeo, goldMat);
+    l2.position.set(0.16, 0.14, 0); l2.rotation.set(0.35, -0.75, -1.25);
+    bowGroup.add(l2);
+    const l3 = new THREE.Mesh(loopGeo, goldMat);
+    l3.position.set(0, 0.14, -0.16); l3.rotation.set(1.25, 0.75, 0.35);
+    bowGroup.add(l3);
+    const l4 = new THREE.Mesh(loopGeo, goldMat);
+    l4.position.set(0, 0.14, 0.16); l4.rotation.set(-1.25, -0.75, -0.35);
+    bowGroup.add(l4);
+
+    const tailGeo = new THREE.BoxGeometry(0.12, 0.32, 0.02);
+    const t1 = new THREE.Mesh(tailGeo, goldMat);
+    t1.position.set(-0.14, -0.04, 0.18); t1.rotation.set(0.45, 0.2, -0.45);
+    bowGroup.add(t1);
+    const t2 = new THREE.Mesh(tailGeo, goldMat);
+    t2.position.set(0.14, -0.04, 0.18); t2.rotation.set(0.45, -0.2, 0.45);
+    bowGroup.add(t2);
+
+    // المفاجأة داخل الصندوق (قلب 3D وكريستالات)
+    const surpriseGroup = new THREE.Group();
+    surpriseGroup.position.set(0, 0.3, 0);
+    surpriseGroup.scale.setScalar(0.001);
+    rootGroup.add(surpriseGroup);
+
+    const hs = new THREE.Shape();
+    hs.moveTo(0.25, 0.25);
+    hs.bezierCurveTo(0.25, 0.25, 0.2, 0, 0, 0);
+    hs.bezierCurveTo(-0.3, 0, -0.3, 0.35, -0.3, 0.35);
+    hs.bezierCurveTo(-0.3, 0.55, -0.15, 0.77, 0.25, 0.95);
+    hs.bezierCurveTo(0.6, 0.77, 0.8, 0.55, 0.8, 0.35);
+    hs.bezierCurveTo(0.8, 0.35, 0.8, 0, 0.5, 0);
+    hs.bezierCurveTo(0.35, 0, 0.25, 0.25, 0.25, 0.25);
+    const hg = new THREE.ExtrudeGeometry(hs, {
+      depth: 0.16,
+      bevelEnabled: true,
+      bevelThickness: 0.08,
+      bevelSize: 0.06,
+      bevelSegments: 4,
+      curveSegments: 16
+    });
+    hg.center(); hg.rotateZ(Math.PI); hg.scale(0.7, 0.7, 0.7);
+    const surpriseHeart = new THREE.Mesh(hg, new THREE.MeshStandardMaterial({
+      color: 0xff1e56,
+      roughness: 0.2,
+      metalness: 0.25,
+      emissive: 0x440011
+    }));
+    surpriseGroup.add(surpriseHeart);
+
+    const sparkleGeo = new THREE.OctahedronGeometry(0.05, 0);
+    const sparkleMat = new THREE.MeshBasicMaterial({ color: 0xffea78 });
+    const sparkles = [];
+    for (let i = 0; i < 16; i++) {
+      const sp = new THREE.Mesh(sparkleGeo, sparkleMat);
+      sp.userData = {
+        origX: (Math.random() - 0.5) * 0.8,
+        origY: 0.3,
+        origZ: (Math.random() - 0.5) * 0.8,
+        targetY: 0.9 + Math.random() * 0.8,
+        speed: 1.5 + Math.random() * 2,
+        phase: Math.random() * Math.PI * 2,
+        rad: 0.3 + Math.random() * 0.45
+      };
+      sp.scale.setScalar(0.001);
+      rootGroup.add(sp);
+      sparkles.push(sp);
+    }
+
+    // تفاعل التدوير والضغط باللمس والماوس
+    let lidProgress = 0;
+    let rotY = 0.5, rotX = 0.22;
+    let velY = 0, velX = 0;
+    let isDragging = false, startX = 0, startY = 0, lastX = 0, lastY = 0, dragDist = 0;
+
+    const canvas = renderer.domElement;
+
+    canvas.addEventListener("pointerdown", e => {
+      isDragging = true;
+      startX = e.clientX; startY = e.clientY;
+      lastX = e.clientX; lastY = e.clientY;
+      dragDist = 0;
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", e => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      dragDist += Math.hypot(dx, dy);
+      velY = dx * 0.012;
+      velX = dy * 0.008;
+      rotY += velY;
+      rotX += velX;
+      rotX = Math.max(-0.45, Math.min(0.65, rotX));
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    const onPointerUp = e => {
+      if (!isDragging) return;
+      isDragging = false;
+      try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+      if (dragDist < 8) {
+        giftStage.click();
+      }
+    };
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerUp);
+
+    canvas.addEventListener("click", e => {
+      if (dragDist >= 8) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }, true);
+
+    const giftNote = document.getElementById("giftNote");
+    if (giftNote) {
+      giftNote.addEventListener("click", () => giftStage.click());
+    }
+
+    let lastW = 0, lastH = 0;
+    function fitGift() {
+      const w = giftBox.clientWidth || 300;
+      const h = giftBox.clientHeight || 250;
+      if (w > 0 && h > 0 && (w !== lastW || h !== lastH)) {
+        lastW = w; lastH = h;
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+    }
+    fitGift();
+    window.addEventListener("resize", fitGift);
+
+    const giftClock = new THREE.Clock();
+
+    (function giftLoop() {
+      requestAnimationFrame(giftLoop);
+      if (document.hidden || !giftStage.offsetParent) return;
+
+      fitGift();
+
+      const t = giftClock.getElapsedTime();
+      const isOpen = giftStage.classList.contains("open");
+      const targetLid = isOpen ? 1 : 0;
+      lidProgress += (targetLid - lidProgress) * (isOpen ? 0.12 : 0.16);
+
+      if (!isDragging) {
+        velY *= 0.94;
+        velX *= 0.94;
+        rotY += velY;
+        rotX += velX;
+        if (Math.abs(velY) < 0.0005) {
+          rotY += 0.0025;
+        }
+      }
+
+      const floatY = reduce ? 0 : Math.sin(t * 2.2) * 0.04;
+      rootGroup.position.y = floatY;
+      rootGroup.rotation.y = rotY;
+      rootGroup.rotation.x = rotX;
+
+      // حركة الغطاء 3D
+      lidGroup.position.y = 0.56 + lidProgress * 0.85;
+      lidGroup.position.z = -lidProgress * 0.45;
+      lidGroup.rotation.x = -lidProgress * 0.72;
+      lidGroup.rotation.z = lidProgress * 0.14;
+
+      // الإضاءة الداخلية
+      innerPt.intensity = 0.1 + lidProgress * 2.4;
+
+      // القلب المفاجئ
+      surpriseGroup.scale.setScalar(Math.max(0.001, lidProgress));
+      surpriseGroup.position.y = 0.3 + lidProgress * 0.75 + Math.sin(t * 3.5) * 0.06;
+      surpriseGroup.rotation.y = t * 1.5;
+      surpriseHeart.scale.setScalar(1 + 0.08 * Math.sin(t * 4));
+
+      // الكريستالات المتطايرة
+      sparkles.forEach((sp, idx) => {
+        const u = sp.userData;
+        if (lidProgress > 0.15) {
+          sp.scale.setScalar(lidProgress * (0.8 + 0.3 * Math.sin(t * u.speed + u.phase)));
+          sp.position.y = u.origY + lidProgress * (u.targetY - u.origY) + Math.sin(t * 2 + idx) * 0.08;
+          sp.position.x = Math.sin(t * u.speed + u.phase) * u.rad;
+          sp.position.z = Math.cos(t * u.speed + u.phase) * u.rad;
+          sp.rotation.x += 0.03;
+          sp.rotation.y += 0.04;
+        } else {
+          sp.scale.setScalar(0.001);
+        }
+      });
+
+      shadowMesh.scale.setScalar(1 - floatY * 0.8);
+      shadowMat.opacity = 0.5 - floatY * 0.2;
+
+      renderer.render(scene, camera);
+    })();
+  }
+
 })();
