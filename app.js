@@ -1580,11 +1580,11 @@ function collectAdminData() {
 
 function getGitHubConfig() {
     let cfg = {
-        owner: "",
-        repo: "",
+        owner: "zezo1895",
+        repo: "lala",
         branch: "main",
         token: "",
-        autoSync: false,
+        autoSync: true,
         lastSync: null
     };
 
