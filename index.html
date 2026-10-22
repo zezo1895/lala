@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#12030a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>حبيبة العسكري | يارا (لالا) ❤️</title>
+
+    <!-- Google Fonts: Cairo & Tajawal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    <!-- Canvas Confetti (v1.9.3 supports shapeFromText) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Floating Background Canvas for Hearts -->
+    <!-- Intro Rose -->
+    <div id="introScreen">
+        <button id="introSkip">تخطي</button>
+        <div id="roseBox"></div>
+        <div class="intro-text">
+            <div id="introCaption"></div>
+            <p id="introHint">دوسي على الوردة عشان تتفتح 🌹</p>
+            <p id="introMsg"></p>
+            <button class="btn-primary" id="introEnter">ادخلي يا قمر ❤️</button>
+        </div>
+    </div>
+
+    <canvas id="heartsCanvas"></canvas>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast-msg">تم حفظ التعديلات بنجاح! ❤️</div>
+
+    <!-- Main Mobile Container -->
+    <div class="app-container">
+
+        <!-- App Header -->
+        <header class="app-header">
+            <div class="header-top">
+                <span class="badge-tag" id="headerBadge">خاص بـ يارا (لالا / يويو) 👑</span>
+                <!-- Secret Trigger Icon -->
+                <button class="secret-trigger-btn" id="secretIconBtn" title="لوحة التحكم">⚙️</button>
+            </div>
+            <!-- Triple click on title triggers admin too -->
+            <div class="heart3d" id="heart3dHero" aria-hidden="true"></div>
+            <div class="header-title-box" id="headerTitleTrigger">
+                <h1 class="header-title">
+                    <span id="titleYaraName">يارا</span>
+                    <span class="pulsing-heart">❤️</span>
+                    <span id="titlePartnerName">حبيبك في الجيش</span>
+                </h1>
+                <p class="header-subtitle" id="titleSubtitle">مهما طالت المسافة.. أنتي ساكنة جوه قلبي</p>
+            </div>
+        </header>
+
+        <!-- ==================== TAB 1: HOME & COUNTDOWN & VOICE & RECEIPT ==================== -->
+        <main id="tab-home" class="view-section active">
+            
+            <!-- Voice Note Player (صوت حبيبك 🎙️) -->
+            <div class="voice-card" id="voicePlayerCard">
+                <div class="voice-header">
+                    <div class="voice-title-box">
+                        <h3 id="voiceCardTitle">فويس نوت من حبيبك 🎙️❤️</h3>
+                        <p id="voiceCardSubtitle">اسمعي صوتي لما توحشيني والدنيا تقفل</p>
+                    </div>
+                    <div class="voice-controls-top">
+                        <button class="voice-shuffle-pill" id="btnShuffleVoice">🔀 عشوائي</button>
+                        <span class="badge-tag" id="voiceCounterBadge" style="font-size: 11px; padding: 3px 8px;">1 من 3</span>
+                    </div>
+                </div>
+
+                <div class="voice-player-container">
+                    <button class="voice-nav-btn" id="btnPrevVoice" title="السابق">⏮</button>
+                    <button class="voice-play-btn" id="btnPlayVoice" title="تشغيل / إيقاف">
+                        <span id="voicePlayIcon">▶</span>
+                    </button>
+                    <button class="voice-nav-btn" id="btnNextVoice" title="عشوائي / التالي">⏭</button>
+                    <!-- Audio Waveform Animation -->
+                    <div class="sound-waves" id="soundWaveBars">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+                    <span class="voice-timer" id="voiceDurationDisplay">00:00</span>
+                </div>
+
+                <audio id="mainAudioElement" style="display: none;"></audio>
+                <p id="voiceEmptyHint" style="font-size: 11px; color: #999; margin-top: 8px; text-align: center; display: none;">
+                    (حبيبك لسه مسجلش فويس.. يقدر يسجل فويسات من لوحة التحكم ⚙️)
+                </p>
+            </div>
+
+            <!-- Army Countdown Card -->
+            <div class="love-card">
+                <h2 class="card-title">
+                    <i>⏳</i> عداد أول إجازة جيش
+                </h2>
+                <div class="countdown-box">
+                    <div class="time-segment">
+                        <span class="time-number" id="cd-days">00</span>
+                        <span class="time-label">يوم</span>
+                    </div>
+                    <div class="time-segment">
+                        <span class="time-number" id="cd-hours">00</span>
+                        <span class="time-label">ساعة</span>
+                    </div>
+                    <div class="time-segment">
+                        <span class="time-number" id="cd-minutes">00</span>
+                        <span class="time-label">دقيقة</span>
+                    </div>
+                    <div class="time-segment">
+                        <span class="time-number" id="cd-seconds">00</span>
+                        <span class="time-label">ثانية</span>
+                    </div>
+                </div>
+                <div class="countdown-quote" id="leaveMessageDisplay">
+                    كل دقيقة بتعدي في الطابور بتقربني لضحكتك يا لالا ❤️
+                </div>
+            </div>
+
+            <!-- Distance -->
+            <div class="love-card">
+                <h2 class="card-title"><i>💞</i> المسافة بينا</h2>
+                <svg class="distance-svg" viewBox="0 0 320 160" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="arcG" x1="1" x2="0">
+                            <stop offset="0" stop-color="#f3cf9a"/>
+                            <stop offset="1" stop-color="#ff5d86"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Background dashed track -->
+                    <path id="loveArc" d="M262 100 Q160 -20 58 100" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-dasharray="4 6" stroke-linecap="round"/>
+                    <!-- Solid traveled track filled by days progress -->
+                    <path id="traveledArc" d="M262 100 Q160 -20 58 100" fill="none" stroke="url(#arcG)" stroke-width="3.5" stroke-linecap="round"/>
+                    <!-- Base station: Zizo -->
+                    <circle cx="262" cy="100" r="9" fill="#f3cf9a"/>
+                    <!-- Destination: Yara -->
+                    <circle cx="58" cy="100" r="9" fill="#ff5d86"/>
+                    <text x="262" y="132" text-anchor="middle" fill="#ffeaf0" font-size="13" font-weight="bold" id="distMe">زيزو</text>
+                    <text x="58" y="132" text-anchor="middle" fill="#ffeaf0" font-size="13" font-weight="bold" id="distYara">يارا</text>
+                    <!-- Dynamic Progress Heart Marker -->
+                    <g id="distMarker" transform="translate(262, 100)">
+                        <circle r="12" fill="rgba(255, 93, 134, 0.4)">
+                            <animate attributeName="r" values="10;20;10" dur="2s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.8;0.15;0.8" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <text font-size="18" text-anchor="middle" y="6">❤️</text>
+                        <!-- Floating progress badge -->
+                        <g id="distBadge" transform="translate(0, -22)">
+                            <rect x="-24" y="-14" width="48" height="18" rx="9" fill="#14030e" stroke="#f3cf9a" stroke-width="1"/>
+                            <text id="distPercentText" x="0" y="-1" text-anchor="middle" fill="#f3cf9a" font-size="10" font-weight="bold">0%</text>
+                        </g>
+                    </g>
+                </svg>
+                <div class="dist-days" id="distDays">...</div>
+                <p class="dist-sub" id="distSub">الحب مش بيتقاس بالكيلومترات</p>
+            </div>
+
+            <!-- Daily note -->
+            <div class="love-card">
+                <h2 class="card-title"><i>☀️</i> افتحي لما تصحي</h2>
+                <div class="daily-env" id="dailyEnv">
+                    <div class="env-face env-front"><span>رسالة النهاردة.. دوسي عشان تتفتح</span></div>
+                    <div class="env-face env-back"><p id="dailyText"></p></div>
+                </div>
+                <p class="daily-date" id="dailyDate"></p>
+            </div>
+
+            <!-- Love Receipt Section -->
+            <div class="love-card">
+                <h2 class="card-title">
+                    <i>🧾</i> فاتورة الحب الرسمية
+                </h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+                    فاتورة كاشير معتمدة ومسجلة بحقوق العشق غير القابلة للنقاش!
+                </p>
+                <button class="btn-primary" id="btnPrintReceipt">
+                    <span>اطبعي فاتورة الحب الآن</span> <i>🖨️</i>
+                </button>
+
+                <!-- Receipt Output Container -->
+                <div class="receipt-wrapper" id="receiptContainer" style="display: none;">
+                    <div class="receipt-slot"></div>
+                    <div class="receipt-paper">
+                        <div class="receipt-header">
+                            <div class="receipt-logo">🧾❤️</div>
+                            <h3>مؤسسة العشق الأبدي</h3>
+                            <p style="font-size: 12px; font-weight: bold;">فاتورة حب رسمية ومؤكدة</p>
+                            <div class="receipt-meta">
+                                <span id="recReceiptNo">رقم الفاتورة: LOVE-2026-YOYO</span>
+                                <span id="recCashier">الكاشير: عسكري مشتاق في الكتيبة</span>
+                                <span id="recCustomer">العميلة: يارا (لالا / يويو)</span>
+                                <span id="recDate">التاريخ: تاريخ أول يوم بيننا</span>
+                            </div>
+                        </div>
+
+                        <!-- Items Table -->
+                        <table class="receipt-table">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: right;">البند</th>
+                                    <th style="text-align: center;">الكمية</th>
+                                    <th style="text-align: left;">السعر</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receiptTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+
+                        <!-- Totals -->
+                        <div class="receipt-totals">
+                            <div class="receipt-row">
+                                <span>المجموع الفرعي:</span>
+                                <span id="recSubtotal">حب لا نهائي</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span>ضريبة الزعل:</span>
+                                <span id="recTax">0% مسموح</span>
+                            </div>
+                            <div class="receipt-row receipt-total-row">
+                                <span>الحساب الإجمالي:</span>
+                                <span id="recTotal">روح قلبي للأبد ❤️</span>
+                            </div>
+                        </div>
+
+                        <div class="receipt-footer-note" id="recFooterNote">
+                            ⚠️ هذا الحب غير قابل للاسترجاع أو الاستبدال مدى الحياة.. استلمتي زيزو وخلاص دبستي!
+                        </div>
+
+                        <div class="receipt-barcode">
+                            ||| | ||||| || |||||| || |
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- ==================== TAB 2: OUR TIMELINE & MEMORIES (ركن التواريخ) ==================== -->
+        <main id="tab-timeline" class="view-section">
+            <div class="love-card">
+                <h2 class="card-title"><i>🌌</i> سماء ذكرياتنا</h2>
+                <div class="sky-wrap"><canvas id="skyCanvas"></canvas></div>
+                <p class="sky-hint">كل نجمة دهب فيها ذكرى.. دوسي عليها ✨</p>
+            </div>
+            <div class="love-card">
+                <h2 class="card-title">
+                    <i>📅</i> ركن تواريخنا وحكايتنا
+                </h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                    محطات مميزة وتواريخ مش هتتنسي أبداً في حكايتنا.. اضغطي على أي محطة لقراءة الذكرى! ✨
+                </p>
+
+                <!-- Interactive Timeline Roadmap -->
+                <div class="timeline-wrapper">
+                    <div class="timeline-line"></div>
+                    <div id="timelineItemsContainer">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== TAB 3: EMERGENCY CARE & HUG (صيدلية لالا) ==================== -->
+        <main id="tab-pharmacy" class="view-section">
+            <div class="love-card">
+                <div class="hug-hero-box">
+                    <button class="hug-btn" id="btnEmergencyHug">
+                        <span>🫂</span>
+                    </button>
+                    <h3 class="hug-title">زرار الحضن الطارئ</h3>
+                    <p class="hug-desc">اضغطي هنا في أي ثانية تحسي بضيق أو محتاجة حضني</p>
+                </div>
+
+                <h3 class="card-title" style="margin-top: 10px;">
+                    <i>💊</i> كبسولات الدعم (افتحي لما...)
+                </h3>
+                <div class="cards-grid" id="emergencyCardsList">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== TAB 4: LOCKED LETTERS (الجوابات المقفولة) ==================== -->
+        <main id="tab-letters" class="view-section">
+            <div class="love-card">
+                <h2 class="card-title">
+                    <i>⏳</i> جوابات مقفولة بالتواريخ
+                </h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+                    جوابات سايبها ليكي حبيبك.. كل جواب ليه وقته وساعته المحددة ومستحيل يتفتح قبل ميعاده!
+                </p>
+
+                <div class="gift-stage" id="giftStage">
+                    <div class="gift3d">
+                        <div class="gin"></div>
+                        <div class="gf gf1"></div><div class="gf gf2"></div><div class="gf gf3"></div><div class="gf gf4"></div>
+                        <div class="gift-lid"><div class="lt">🎀</div><div class="ls ls1"></div><div class="ls ls2"></div><div class="ls ls3"></div><div class="ls ls4"></div></div>
+                    </div>
+                </div>
+                <p class="gift-note" id="giftNote">دوسي على الهدية عشان تتفتح 🎁</p>
+                <div id="lockedLettersList">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== TAB 5: THANAWEYA & GAMES (المذاكرة والهزار) ==================== -->
+        <main id="tab-study-games" class="view-section">
+            
+            <!-- Thanaweya Booster -->
+            <div class="love-card">
+                <div class="study-badge-header">
+                    <span>🎓</span>
+                    <span>ركن بطلة وشطورة زيزو: يارا ❤️</span>
+                </div>
+
+                <!-- Study Pomodoro Timer -->
+                <div class="study-timer-box">
+                    <span style="font-size: 13px; font-weight: 800; color: var(--secondary);">⏱️ تايمر المذاكرة المركزة (25 دقيقة)</span>
+                    <div class="timer-display" id="pomodoroDisplay">25:00</div>
+                    <div class="timer-controls">
+                        <button class="btn-primary" id="btnStartTimer" style="width: auto; padding: 9px 22px; font-size: 13px;">
+                            <span id="timerPlayIcon">▶️</span> <span id="timerPlayText">ابدأي تركيز</span>
+                        </button>
+                        <button class="btn-secondary" id="btnResetTimer">
+                            <span>🔄 إعادة</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Motivating quotes -->
+                <div class="study-quote-slider">
+                    <div class="study-quote-text" id="studyQuoteDisplay">
+                        "عافري عشان حلمك يا لالا.. التعب هيروح وفرحة النتيجة هتفضل محفورة في قلبنا سوا! 🎓"
+                    </div>
+                    <button class="btn-secondary" id="btnNextQuote" style="margin-top: 10px; width: 100%;">
+                        <span>جرعة تشجيع تانية ✨</span>
+                    </button>
+                </div>
+
+                <!-- Break ideas -->
+                <h4 style="font-size: 14px; font-weight: 800; margin: 14px 0 8px; color: var(--text-main);">
+                    ☕ أفكار استراحة سريعة (5 دقايق):
+                </h4>
+                <div id="studyBreakList" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Impossible Button Game -->
+            <div class="game-box">
+                <h3 class="game-question">مين بيحب التاني أكتر؟ 🤔</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+                    جاوبي بصراحة واختاري إجابتك من تحت!
+                </p>
+
+                <div class="impossible-arena" id="arenaBox">
+                    <!-- Lover Button -->
+                    <button class="btn-game-lover" id="btnHeLoves">
+                        <span id="gamePartnerName">زيزو (حبيبك) ❤️</span>
+                    </button>
+
+                    <!-- Escaping Button -->
+                    <button class="btn-game-escape" id="btnYaraEscape">
+                        <span id="gameYaraName">يارا (لالا) 😜</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Shake Phone Game -->
+            <div class="shake-trigger-box">
+                <div class="shake-icon-animation">📱💫</div>
+                <h3 style="font-family: var(--font-heading); font-size: 17px; font-weight: 900; color: #0277bd;">
+                    هزي الموبايل لما تزهقي!
+                </h3>
+                <p style="font-size: 13px; color: #555; margin-top: 4px; margin-bottom: 12px;">
+                    هزي التليفون في إيدك أو اضغطي على الزرار وهيطلعلك أمر هزار أو روقان فوري!
+                </p>
+                <button class="btn-primary" id="btnManualShake" style="background: linear-gradient(135deg, #0288d1, #0097a7);">
+                    <span>هزي الموبايل هنا 📳</span>
+                </button>
+                <div class="shake-result-bubble" id="shakeBubble">
+                    روحي اعملي نسكافيه واشربي باسمي يا لالا ☕
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Discreet Footer Link to Admin -->
+        <footer style="text-align: center; padding: 20px 0 10px; font-size: 12px; color: #999;">
+            <span>معمول بكل حب مخصوص لـ يارا ❤️ | </span>
+            <span id="footerAdminTrigger" style="cursor: pointer; text-decoration: underline; color: var(--primary); font-weight: 700;">دخول لوحة التحكم</span>
+        </footer>
+
+    </div><!-- End App Container -->
+
+    <!-- ==================== BOTTOM NAVIGATION BAR (5 TABS) ==================== -->
+    <nav class="bottom-nav">
+        <button class="nav-tab active" data-tab="tab-home">
+            <span class="tab-icon">🏠</span>
+            <span>الرئيسية</span>
+        </button>
+        <button class="nav-tab" data-tab="tab-timeline">
+            <span class="tab-icon">📅</span>
+            <span>تواريخنا</span>
+        </button>
+        <button class="nav-tab" data-tab="tab-pharmacy">
+            <span class="tab-icon">💊</span>
+            <span>صيدلية لالا</span>
+        </button>
+        <button class="nav-tab" data-tab="tab-letters">
+            <span class="tab-icon">💌</span>
+            <span>الجوابات</span>
+        </button>
+        <button class="nav-tab" data-tab="tab-study-games">
+            <span class="tab-icon">🎓</span>
+            <span>المذاكرة</span>
+        </button>
+    </nav>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- 1. Generic Modal (Reading Open When / Unlocked Letters / Timeline Story) -->
+    <div class="modal-overlay" id="readModal">
+        <div class="modal-card">
+            <button class="modal-close-btn" id="btnCloseReadModal">✕</button>
+            <div id="readModalHeader" style="margin-bottom: 12px;">
+                <span class="badge-tag" id="readModalBadge">رسالة خاصة</span>
+                <h3 id="readModalTitle" style="font-family: var(--font-heading); font-size: 18px; margin-top: 6px;">عنوان الرسالة</h3>
+            </div>
+            <div id="readModalBody" style="font-size: 14px; line-height: 1.8; color: #333; background: #fffafb; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--card-border); max-height: 50vh; overflow-y: auto;">
+                محتوى الرسالة
+            </div>
+            <button class="btn-primary" id="btnAckReadModal" style="margin-top: 16px;">
+                <span>بحبك يا زيزو ❤️</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Locked Letter Modal (Teasing & Countdown) -->
+    <div class="modal-overlay" id="lockedModal">
+        <div class="modal-card" style="text-align: center;">
+            <button class="modal-close-btn" id="btnCloseLockedModal">✕</button>
+            <div style="font-size: 54px; margin-bottom: 8px;">🔒🤫</div>
+            <h3 style="font-family: var(--font-heading); font-size: 19px; color: #d84315;">
+                لسه شوية يا لالا.. الصبر حلو!
+            </h3>
+            <p id="lockedModalDateText" style="font-size: 13px; color: #666; margin: 10px 0;">
+                الجواب ده مقفول بقفل سري، ومش هيتفتح غير في اليوم المحدد!
+            </p>
+            <div id="lockedModalTimeRemaining" style="background: #fff3e0; border: 1px solid #ffe0b2; padding: 10px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 800; color: #e65100; margin: 12px 0;">
+                باقي على الفتح: 5 أيام و 12 ساعة
+            </div>
+            <p style="font-size: 12px; color: #888;">
+                حبيبك مجهزلك فيه كلام من قلبه هيعجبك أوي.. متستعجليش! 😉
+            </p>
+            <button class="btn-secondary" id="btnAckLockedModal" style="margin-top: 16px; width: 100%;">
+                <span>حاضر هستنى يا زيزو ❤️</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. Hug Popup Celebration -->
+    <div class="modal-overlay" id="hugModal">
+        <div class="modal-card" style="text-align: center;">
+            <button class="modal-close-btn" id="btnCloseHugModal">✕</button>
+            <div style="font-size: 60px; animation: heartPulse 1.2s infinite;">🫂❤️</div>
+            <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--primary);">
+                حضن دافي طارئ وصلك دلوقتي!
+            </h3>
+            <p id="hugModalMessage" style="font-size: 14px; line-height: 1.8; color: #444; margin: 14px 0; background: #fff5f8; padding: 14px; border-radius: var(--radius-md);">
+                مغمض عيني وشايفك قدامي وواخدك في حضني جامد أوي دلوقتي.. خدي نفس عميق وافتكري إن مسافة الجيش دي مؤقتة، وإنك في قلبي دايماً ومفيش أي حاجة في الدنيا تقدر تبعدني عنك يا لالا.
+            </p>
+            <button class="btn-primary" id="btnAckHugModal">
+                <span>استلمت الحضن وبقيت أحسن ❤️</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. PIN Authentication Modal -->
+    <div class="modal-overlay" id="pinModal">
+        <div class="modal-card" style="text-align: center; max-width: 340px;">
+            <button class="modal-close-btn" id="btnClosePinModal">✕</button>
+            <div style="font-size: 36px; margin-bottom: 6px;">🔐</div>
+            <h3 style="font-family: var(--font-heading); font-size: 18px; margin-bottom: 6px;">
+                منطقة التحكم للبطل فقط!
+            </h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+                أدخل الرقم السري للتحكم في الرسايل والتواريخ
+            </p>
+            <input type="password" id="inputPinCode" class="admin-input" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 900;" maxlength="6" placeholder="••••">
+            <p id="pinErrorMsg" style="color: red; font-size: 12px; display: none; margin-top: 6px;">الرقم السري غير صحيح!</p>
+            <button class="btn-primary" id="btnSubmitPin" style="margin-top: 14px;">
+                <span>فتح لوحة التحكم</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 5. SECRET ADMIN DASHBOARD MODAL -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-card admin-card">
+            <button class="modal-close-btn" id="btnCloseAdminModal">✕</button>
+            
+            <div class="admin-header">
+                <span class="badge-tag">لوحة تحكم كاملة 🛠️</span>
+                <h3 style="font-family: var(--font-heading); font-size: 18px; margin-top: 4px;">إدارة كل محتويات ورسائل الموقع</h3>
+                <p style="font-size: 11px; color: #777;">اسحب شريط التبويبات باللمس يمين وشمال للتنقل بسهولة</p>
+            </div>
+
+            <!-- SCROLLABLE HORIZONTAL ADMIN TABS -->
+            <div class="admin-tabs-container">
+                <div class="admin-tabs">
+                    <button class="admin-tab-btn active" data-admin-tab="adm-general">⚙️ عام وإجازة</button>
+                    <button class="admin-tab-btn" data-admin-tab="adm-voice">🎙️ فويس نوت</button>
+                    <button class="admin-tab-btn" data-admin-tab="adm-timeline">📅 ركن التواريخ</button>
+                    <button class="admin-tab-btn" data-admin-tab="adm-letters">💌 الجوابات المقفولة</button>
+                    <button class="admin-tab-btn" data-admin-tab="adm-pharmacy">💊 صيدلية لالا</button>
+                    <button class="admin-tab-btn" data-admin-tab="adm-shake">📱 رسايل الهز</button>
+                    <button class="admin-tab-btn" data-admin-tab="adm-study">🎓 الثانوية والمذاكرة</button>
+                    <button class="admin-tab-btn" data-admin-tab="adm-receipt">🧾 فاتورة الحب</button>
+                    <button class="admin-tab-btn" data-admin-tab="adm-github" style="background: #1f2328; color: #fff; border-color: #30363d;">🐙 ربط GitHub (مزامنة تلقائية)</button>
+                </div>
+            </div>
+
+            <!-- Admin Form Sections (Scrollable container) -->
+            <div class="admin-content-scroll" id="adminTabContent">
+                
+                <!-- 1. General & Countdown -->
+                <div id="adm-general" class="admin-section active">
+                    <div class="admin-input-group">
+                        <label>تاريخ ووقت أول إجازة جيش (للعداد):</label>
+                        <input type="datetime-local" id="admLeaveDate" class="admin-input">
+                    </div>
+                    <div class="admin-input-group">
+                        <label>تاريخ بداية الدخول أو آخر نزول (لحساب حركة المسافة بالأيام):</label>
+                        <input type="datetime-local" id="admArmyStartDate" class="admin-input">
+                    </div>
+                    <div class="admin-input-group">
+                        <label>رسالة عداد الإجازة:</label>
+                        <textarea id="admLeaveMsg" class="admin-textarea" rows="2"></textarea>
+                    </div>
+                    <div class="admin-input-group">
+                        <label>اسم حبيبتك:</label>
+                        <input type="text" id="admYaraName" class="admin-input">
+                    </div>
+                    <div class="admin-input-group">
+                        <label>ألقاب الدلع (مثلاً: لالا / يويو):</label>
+                        <input type="text" id="admNicknames" class="admin-input">
+                    </div>
+                    <div class="admin-input-group">
+                        <label>رتبتك في الجيش (لأنك لسه متعرفش):</label>
+                        <select id="admMilitaryRank" class="admin-input" style="font-weight: 800; font-size: 14px;">
+                            <option value="officer">🎖️ الظابط زيزو</option>
+                            <option value="soldier">🪖 العسكري زيزو</option>
+                        </select>
+                    </div>
+                    <div class="admin-input-group">
+                        <label>اسم الدلع (زيزو):</label>
+                        <input type="text" id="admPartnerName" class="admin-input" value="زيزو">
+                    </div>
+                    <div class="admin-input-group">
+                        <label>الرقم السري الجديد للوحة التحكم:</label>
+                        <input type="text" id="admPinCode" class="admin-input" maxlength="6">
+                    </div>
+                </div>
+
+                <!-- 2. Voice Notes Management (Multiple Voices) -->
+                <div id="adm-voice" class="admin-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 800; font-size: 13px;">الفويسات (بتتجاب عشوائي لـ يارا):</span>
+                        <button class="btn-secondary" id="btnAddVoiceBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة فويس جديد</button>
+                    </div>
+                    <div id="admVoiceList" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Generated dynamically for each voice note -->
+                    </div>
+                </div>
+
+                <!-- 3. Timeline / Milestones Management -->
+                <div id="adm-timeline" class="admin-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: 800; font-size: 13px;">تواريخ حكايتنا المميزة:</span>
+                        <button class="btn-secondary" id="btnAddTimelineBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة تاريخ وموقف جديد</button>
+                    </div>
+                    <div id="admTimelineList" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <!-- 4. Locked Letters Management -->
+                <div id="adm-letters" class="admin-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: 800; font-size: 13px;">الجوابات المقفولة:</span>
+                        <button class="btn-secondary" id="btnAddLetterBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة جواب مقفول جديد</button>
+                    </div>
+                    <div id="admLettersList" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <!-- 5. Emergency Pharmacy Cards Management (افتحي لما) -->
+                <div id="adm-pharmacy" class="admin-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: 800; font-size: 13px;">كبسولات صيدلية لالا:</span>
+                        <button class="btn-secondary" id="btnAddPharmacyCardBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة كرت دعم جديد</button>
+                    </div>
+                    <div id="admPharmacyList" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <!-- 6. Shake Messages Management -->
+                <div id="adm-shake" class="admin-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: 800; font-size: 13px;">رسايل الهزار عند هز الموبايل:</span>
+                        <button class="btn-secondary" id="btnAddShakeBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة رسالة</button>
+                    </div>
+                    <div id="admShakeList" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <!-- 7. Thanaweya Study Quotes Management -->
+                <div id="adm-study" class="admin-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: 800; font-size: 13px;">رسائل تشجيع الثانوية العامة:</span>
+                        <button class="btn-secondary" id="btnAddStudyQuoteBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة تشجيع</button>
+                    </div>
+                    <div id="admStudyList" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <!-- 8. Receipt Customization -->
+                <div id="adm-receipt" class="admin-section" style="display: none;">
+                    <div class="admin-input-group">
+                        <label>الكاشير:</label>
+                        <input type="text" id="admRecCashier" class="admin-input">
+                    </div>
+                    <div class="admin-input-group">
+                        <label>العميل:</label>
+                        <input type="text" id="admRecCustomer" class="admin-input">
+                    </div>
+                    <div class="admin-input-group">
+                        <label>إجمالي الفاتورة:</label>
+                        <input type="text" id="admRecTotal" class="admin-input">
+                    </div>
+                    <div class="admin-input-group">
+                        <label>الملاحظة الختامية للفاتورة:</label>
+                        <textarea id="admRecNote" class="admin-textarea" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- 9. GitHub Auto-Sync (data.json) -->
+                <div id="adm-github" class="admin-section" style="display: none;">
+                    <div style="background: linear-gradient(135deg, #0d1117, #161b22); color: #c9d1d9; border: 1px solid #30363d; border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <span style="font-size: 20px;">🐙</span>
+                            <strong style="color: #58a6ff; font-size: 14px;">المزامنة التلقائية مع GitHub (data.json)</strong>
+                        </div>
+                        <p style="font-size: 11px; line-height: 1.6; margin: 0; color: #8b949e;">
+                            أول ما تدوس حفظ، الموقع هيبعت كل بياناتك وفويساتك لملف <code style="color: #7ee787; background: #21262d; padding: 2px 5px; border-radius: 4px;">data.json</code> على الجيت هاب تلقائياً! يارا أول ما تفتح الموقع هيتحدث عندها مباشرة بدون ما تحتاج تبعتلها لينكات جديدة.
+                        </p>
+                    </div>
+
+                    <!-- Step by step helper -->
+                    <details style="background: #fff; border: 1px dashed #d0d7de; border-radius: var(--radius-sm); padding: 10px; margin-bottom: 12px; font-size: 11px;">
+                        <summary style="cursor: pointer; font-weight: 800; color: #0969da;">💡 إزاي تجيب توكن GitHub في دقيقة واحدة؟ (اضغط هنا)</summary>
+                        <ol style="margin: 8px 0 0 16px; padding: 0; line-height: 1.7; color: #57606a;">
+                            <li>ادخل على إعدادات حسابك: <a href="https://github.com/settings/tokens" target="_blank" style="color: #0969da; text-decoration: underline;">GitHub Tokens</a></li>
+                            <li>اضغط على <strong>Generate new token</strong> واختار <strong>Generate new token (classic)</strong>.</li>
+                            <li>اكتب في الملاحظة (Note) أي اسم مثل: <code style="background: #f6f8fa; padding: 1px 4px;">yara-app</code>.</li>
+                            <li>علّم علامة صح على مربع <strong>repo</strong> (عشان يقدر يكتب في data.json).</li>
+                            <li>انزل لآخر الصفحة واضغط <strong>Generate token</strong>.</li>
+                            <li>انسخ الكود اللي هيظهر (بيبدأ بـ <code style="background: #f6f8fa; padding: 1px 4px;">ghp_...</code>) وحطه في خانة التوكن بالأسفل واضغط حفظ. التوكن محفوظ في جهازك أنت بس ومستحيل يارا تشوفه.</li>
+                        </ol>
+                    </details>
+
+                    <div class="admin-input-group">
+                        <label>اسم المستخدم في GitHub (Username / Owner):</label>
+                        <input type="text" id="admGhOwner" class="admin-input" placeholder="مثال: AhmedZizo">
+                    </div>
+
+                    <div class="admin-input-group">
+                        <label>اسم المستودع (Repository Name):</label>
+                        <input type="text" id="admGhRepo" class="admin-input" placeholder="مثال: yara">
+                    </div>
+
+                    <div class="admin-input-group">
+                        <label>الفرع (Branch):</label>
+                        <input type="text" id="admGhBranch" class="admin-input" value="main">
+                    </div>
+
+                    <div class="admin-input-group">
+                        <label>توكن GitHub الشخصي (Personal Access Token):</label>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="password" id="admGhToken" class="admin-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                            <button type="button" id="btnToggleGhToken" class="btn-secondary" style="padding: 0 12px; font-size: 12px;">👁️</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; font-size: 12px;">
+                        <input type="checkbox" id="admGhAutoSync" style="width: 18px; height: 18px; accent-color: #238636; cursor: pointer;">
+                        <label for="admGhAutoSync" style="cursor: pointer; font-weight: 700; color: #24292f; margin: 0;">مزامنة تلقائية مع جيت هاب عند الضغط على "حفظ التعديلات"</label>
+                    </div>
+
+                    <!-- GitHub Action buttons -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button type="button" class="btn-primary" id="btnSyncGhNow" style="background: linear-gradient(135deg, #238636, #2ea043); border-color: #2ea043; color: #fff;">
+                            <span>🚀 حفظ وتحديث data.json على GitHub الآن</span>
+                        </button>
+                        <button type="button" class="btn-secondary" id="btnFetchGhNow" style="background: #f6f8fa; color: #24292f; border-color: #d0d7de;">
+                            <span>📥 سحب أحدث نسخة من GitHub (تحديث يدوي)</span>
+                        </button>
+                    </div>
+
+                    <!-- Sync Status Banner -->
+                    <div id="admGhStatusBox" style="margin-top: 12px; padding: 10px; border-radius: var(--radius-sm); font-size: 11px; background: #f6f8fa; border: 1px solid #d0d7de; color: #57606a;">
+                        <span id="admGhStatusText">حالة الربط: بانتظار إدخال الإعدادات</span>
+                    </div>
+                </div>
+
+            </div><!-- End adminTabContent -->
+
+            <!-- Admin Actions (Save, Share URL, Reset) -->
+            <div class="admin-actions">
+                <button class="btn-primary" id="btnSaveAdminData">
+                    <span>💾 حفظ كل التعديلات وتطبيقها فورا</span>
+                </button>
+                <button class="btn-primary" id="btnQuickSyncGithub" style="background: linear-gradient(135deg, #1f2328, #24292f); border-color: #30363d; color: #fff;">
+                    <span>🐙 حفظ وتحديث فوري على GitHub (data.json)</span>
+                </button>
+                <button class="btn-secondary" id="btnShareAdminUrl" style="background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7;">
+                    <span>🔗 نسخ رابط الموقع بكل تعديلاتك (لإرساله لـ يارا)</span>
+                </button>
+                <button class="btn-secondary" id="btnExportDataJs" style="background: #e3f2fd; color: #1565c0; border-color: #90caf9;">
+                    <span>📥 تحميل ملف default-data.js بتعديلاتك (لجيت هاب)</span>
+                </button>
+                <button class="btn-secondary" id="btnResetDefaultData" style="color: #c62828;">
+                    <span>🔄 استعادة البيانات الأصلية</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="default-data.js"></script>
+    <script src="app.js"></script>
+    <script src="romance3d.js"></script>
+    <script src="extras.js"></script>
+</body>
+</html>
