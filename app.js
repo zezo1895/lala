@@ -22,9 +22,101 @@ let audioChunks = [];
 let recordInterval = null;
 let recordSeconds = 0;
 
+// ==========================================
+// 0. INDEXED-DB ENGINE & GOOGLE DRIVE HELPER
+// ==========================================
+const IDB_NAME = "YaraArmyAppDB";
+const IDB_STORE = "app_state";
+
+function openAppIDB() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject("IndexedDB not supported");
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(IDB_STORE)) {
+                db.createObjectStore(IDB_STORE);
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function saveToIDB(data) {
+    try {
+        const db = await openAppIDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(IDB_STORE, "readwrite");
+            tx.objectStore(IDB_STORE).put(JSON.parse(JSON.stringify(data)), "main_data");
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (e) {
+        console.warn("IDB Save warning:", e);
+        return false;
+    }
+}
+
+async function loadFromIDB() {
+    try {
+        const db = await openAppIDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction(IDB_STORE, "readonly");
+            const req = tx.objectStore(IDB_STORE).get("main_data");
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+        });
+    } catch (e) {
+        return null;
+    }
+}
+
+function safeSaveLocalStorage(data) {
+    if (!data) return;
+    // Always save full data with all voices to IndexedDB (unlimited storage)
+    saveToIDB(data);
+
+    try {
+        localStorage.setItem("yara_army_app_data", JSON.stringify(data));
+    } catch (quotaErr) {
+        console.warn("LocalStorage quota full, saving lightweight copy to localStorage & full audio to IndexedDB...");
+        try {
+            // Keep non-base64 URLs in localStorage, while heavy base64 stays safely in IndexedDB & runtime memory
+            const slimData = JSON.parse(JSON.stringify(data));
+            if (Array.isArray(slimData.voiceNotes)) {
+                slimData.voiceNotes.forEach(vn => {
+                    if (vn.audioSrc && vn.audioSrc.startsWith("data:") && vn.audioSrc.length > 100000) {
+                        vn._storedInIDB = true;
+                        vn.audioSrc = "";
+                    }
+                });
+            }
+            localStorage.setItem("yara_army_app_data", JSON.stringify(slimData));
+        } catch (err2) {
+            console.error("Could not save slim copy to localStorage:", err2);
+        }
+    }
+}
+
+// Normalize Google Drive sharing links into direct playable audio streams
+function normalizeAudioUrl(url) {
+    if (!url || typeof url !== "string") return "";
+    const trimmed = url.trim();
+    if (trimmed.startsWith("data:")) return trimmed;
+
+    // Extract Google Drive File ID if present
+    const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (driveMatch && driveMatch[1] && trimmed.includes("drive.google.com")) {
+        const fileId = driveMatch[1];
+        return `https://docs.google.com/uc?export=download&id=${fileId}`;
+    }
+    return trimmed;
+}
+
 // Initialize when DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
-    initData();
+document.addEventListener("DOMContentLoaded", async () => {
+    await initData();
     initCanvasHearts();
     initUI();
     initNavigation();
@@ -44,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ==========================================
 // 1. DATA INITIALIZATION & SYNC
 // ==========================================
-function initData() {
+async function initData() {
     // 1. Check if URL contains shared data hash (#data=...)
     if (window.location.hash && window.location.hash.startsWith("#data=")) {
         try {
@@ -53,7 +145,7 @@ function initData() {
             const parsedData = JSON.parse(decodedJson);
             if (parsedData && parsedData.settings) {
                 appData = parsedData;
-                localStorage.setItem("yara_army_app_data", JSON.stringify(appData));
+                safeSaveLocalStorage(appData);
                 showToast("تم تحميل وتحديث كل البيانات والرسايل الجديدة! ❤️");
                 history.replaceState(null, document.title, window.location.pathname + window.location.search);
                 return;
@@ -63,43 +155,66 @@ function initData() {
         }
     }
 
-    // 2. Load from LocalStorage
+    // 2. Load from IndexedDB first (contains full voice notes without 5MB limit)
+    const idbData = await loadFromIDB();
+
+    // 3. Load from LocalStorage
     const stored = localStorage.getItem("yara_army_app_data");
+    let lsData = null;
     if (stored) {
         try {
-            appData = JSON.parse(stored);
-            // Ensure newly added structures exist if migrating from older state
-            if (!appData.timeline) appData.timeline = JSON.parse(JSON.stringify(DEFAULT_APP_DATA.timeline));
-            if (!appData.voiceNotes || !Array.isArray(appData.voiceNotes)) {
-                if (appData.voiceNote && appData.voiceNote.audioSrc) {
-                    appData.voiceNotes = [appData.voiceNote];
-                } else {
-                    appData.voiceNotes = JSON.parse(JSON.stringify(DEFAULT_APP_DATA.voiceNotes));
-                }
-            }
-            // Migrate partner name to Zizo & add military rank
-            if (appData.settings) {
-                if (!appData.settings.partnerName || appData.settings.partnerName === "حبيبك البطل" || appData.settings.partnerName === "أحمد") {
-                    appData.settings.partnerName = "زيزو";
-                }
-                if (!appData.settings.militaryRank) {
-                    appData.settings.militaryRank = "officer";
-                }
-            }
+            lsData = JSON.parse(stored);
         } catch (e) {
             console.error("Failed to parse localStorage data:", e);
         }
     }
 
-    // 3. Fallback to DEFAULT_APP_DATA
+    if (idbData && lsData) {
+        const idbTime = idbData.updatedAt ? new Date(idbData.updatedAt).getTime() : 0;
+        const lsTime = lsData.updatedAt ? new Date(lsData.updatedAt).getTime() : 0;
+        appData = idbTime >= lsTime ? idbData : lsData;
+        // Restore any base64 audio from IDB if lsData was slimmed
+        if (appData === lsData && Array.isArray(appData.voiceNotes) && Array.isArray(idbData.voiceNotes)) {
+            appData.voiceNotes.forEach(vn => {
+                if (!vn.audioSrc && vn._storedInIDB) {
+                    const match = idbData.voiceNotes.find(x => x.id === vn.id);
+                    if (match && match.audioSrc) vn.audioSrc = match.audioSrc;
+                }
+            });
+        }
+    } else {
+        appData = idbData || lsData;
+    }
+
+    if (appData) {
+        if (!appData.timeline) appData.timeline = JSON.parse(JSON.stringify(DEFAULT_APP_DATA.timeline));
+        if (!appData.voiceNotes || !Array.isArray(appData.voiceNotes)) {
+            if (appData.voiceNote && appData.voiceNote.audioSrc) {
+                appData.voiceNotes = [appData.voiceNote];
+            } else {
+                appData.voiceNotes = JSON.parse(JSON.stringify(DEFAULT_APP_DATA.voiceNotes));
+            }
+        }
+        if (appData.settings) {
+            if (!appData.settings.partnerName || appData.settings.partnerName === "حبيبك البطل" || appData.settings.partnerName === "أحمد") {
+                appData.settings.partnerName = "زيزو";
+            }
+            if (!appData.settings.militaryRank) {
+                appData.settings.militaryRank = "officer";
+            }
+        }
+    }
+
+    // 4. Fallback to DEFAULT_APP_DATA
     if (!appData) {
         appData = JSON.parse(JSON.stringify(DEFAULT_APP_DATA));
-        localStorage.setItem("yara_army_app_data", JSON.stringify(appData));
+        safeSaveLocalStorage(appData);
     }
 }
 
 function saveData(notify = true) {
-    localStorage.setItem("yara_army_app_data", JSON.stringify(appData));
+    appData.updatedAt = new Date().toISOString();
+    safeSaveLocalStorage(appData);
     if (notify) showToast("تم حفظ التعديلات بنجاح! ❤️");
     refreshAllUI();
 }
@@ -275,6 +390,9 @@ function initVoicePlayer() {
             const pct = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
             if (trackFill) trackFill.style.width = pct + "%";
             if (trackThumb) trackThumb.style.left = pct + "%";
+        } else {
+            if (trackFill) trackFill.style.width = "0%";
+            if (trackThumb) trackThumb.style.left = "0%";
         }
     }
 
@@ -301,7 +419,8 @@ function initVoicePlayer() {
         updateProgressUI(0, getVoiceDuration());
 
         if (currentVoice.audioSrc) {
-            audioElement.src = currentVoice.audioSrc;
+            const playableSrc = normalizeAudioUrl(currentVoice.audioSrc);
+            audioElement.src = playableSrc;
             audioElement.playbackRate = speeds[currentSpeedIdx];
             if (emptyHint) emptyHint.style.display = "none";
             if (autoPlay) {
@@ -342,7 +461,6 @@ function initVoicePlayer() {
     // Audio metadata & Chromium webm duration hack
     function checkAudioDuration() {
         if (audioElement.duration === Infinity) {
-            // Force Chromium to compute webm duration
             audioElement.currentTime = 1e101;
             audioElement.ontimeupdate = () => {
                 audioElement.ontimeupdate = handleTimeUpdate;
@@ -379,7 +497,7 @@ function initVoicePlayer() {
         pct = Math.max(0, Math.min(1, pct));
 
         let dur = getVoiceDuration();
-        if (!dur || dur <= 0) dur = 30; // fallback
+        if (!dur || dur <= 0) dur = 30;
 
         const targetTime = pct * dur;
         updateProgressUI(targetTime, dur);
@@ -394,16 +512,16 @@ function initVoicePlayer() {
     }
 
     if (trackWrapper) {
-        trackWrapper.addEventListener("pointerdown", (e) => {
+        trackWrapper.onpointerdown = (e) => {
             isDraggingScrubber = true;
-            trackWrapper.setPointerCapture(e.pointerId);
+            try { trackWrapper.setPointerCapture(e.pointerId); } catch (_) {}
             seekToPointer(e, true);
-        });
+        };
 
-        trackWrapper.addEventListener("pointermove", (e) => {
+        trackWrapper.onpointermove = (e) => {
             if (!isDraggingScrubber) return;
             seekToPointer(e, true);
-        });
+        };
 
         const endDrag = (e) => {
             if (isDraggingScrubber) {
@@ -413,8 +531,8 @@ function initVoicePlayer() {
             }
         };
 
-        trackWrapper.addEventListener("pointerup", endDrag);
-        trackWrapper.addEventListener("pointercancel", () => { isDraggingScrubber = false; });
+        trackWrapper.onpointerup = endDrag;
+        trackWrapper.onpointercancel = () => { isDraggingScrubber = false; };
     }
 
     // Rewind 5 seconds
@@ -490,7 +608,7 @@ function initVoicePlayer() {
                 if (navigator.vibrate) navigator.vibrate(40);
             }).catch(e => {
                 console.error("Playback error:", e);
-                showToast("تعذر تشغيل الصوت، تأكد من صحة التسجيل");
+                showToast("تعذر تشغيل الرابط، يفضل رفع الملف من الموبايل مباشرة 🎙️");
             });
         }
     };
@@ -505,7 +623,7 @@ function initVoicePlayer() {
 
     if (nextBtn) {
         nextBtn.onclick = () => {
-            pickRandomVoice(isPlayingVoice);
+            loadVoice(currentVoiceIndex + 1, isPlayingVoice);
         };
     }
 
@@ -843,7 +961,7 @@ function renderThanaweyaQuotes() {
     breakList.innerHTML = "";
     appData.thanaweya.breakActivities.forEach(act => {
         const item = document.createElement("div");
-        item.style.cssText = "background: #fff; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,182,193,0.5); font-size: 13px; font-weight: 700;";
+        item.style.cssText = "background: #fff; color: #43152b; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,182,193,0.5); font-size: 13px; font-weight: 700;";
         item.textContent = act;
         breakList.appendChild(item);
     });
@@ -1012,7 +1130,6 @@ function triggerConfetti(massive = false) {
 }
 
 function initCanvasHearts() {
-    // تم إلغاء حلقة الرسم الثنائية المكررة لتوفير 100% من استهلاك المعالج لصالح البتلات ثلاثية الأبعاد
     const canvas = document.getElementById("heartsCanvas");
     if (canvas) canvas.style.display = "none";
 }
@@ -1087,18 +1204,17 @@ function initAdminSystem() {
             const targetSection = document.getElementById(targetId);
             if (targetSection) targetSection.style.display = "block";
 
-            // Scroll tab smoothly into view
             tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         });
     });
 
     // Save Admin Data
-    document.getElementById("btnSaveAdminData").addEventListener("click", () => {
+    document.getElementById("btnSaveAdminData").addEventListener("click", async () => {
         collectAdminData();
         saveData(true);
         const ghCfg = getGitHubConfig();
         if (ghCfg.autoSync && ghCfg.token && ghCfg.owner && ghCfg.repo) {
-            syncDataToGitHub(false);
+            await syncDataToGitHub(false);
         }
         adminModal.classList.remove("active");
     });
@@ -1106,18 +1222,20 @@ function initAdminSystem() {
     // Quick Sync to GitHub Button
     const btnQuickSync = document.getElementById("btnQuickSyncGithub");
     if (btnQuickSync) {
-        btnQuickSync.addEventListener("click", () => {
+        btnQuickSync.addEventListener("click", async () => {
             collectAdminData();
-            syncDataToGitHub(true);
+            saveData(false);
+            await syncDataToGitHub(true);
         });
     }
 
     // Direct GitHub Sync inside GitHub Tab
     const btnSyncGhNow = document.getElementById("btnSyncGhNow");
     if (btnSyncGhNow) {
-        btnSyncGhNow.addEventListener("click", () => {
+        btnSyncGhNow.addEventListener("click", async () => {
             collectAdminData();
-            syncDataToGitHub(true);
+            saveData(false);
+            await syncDataToGitHub(true);
         });
     }
 
@@ -1187,13 +1305,14 @@ function initAdminSystem() {
         }
     });
 
-    // Add Voice Note Button
+    // Add Voice Note Button (Collects current inputs first so nothing is lost!)
     const btnAddVoice = document.getElementById("btnAddVoiceBtn");
     if (btnAddVoice) {
         btnAddVoice.addEventListener("click", () => {
+            collectAdminVoiceOnly();
             if (!appData.voiceNotes) appData.voiceNotes = [];
             appData.voiceNotes.unshift({
-                id: `vn_${Date.now()}`,
+                id: `vn_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
                 title: "فويس جديد 🎙️❤️",
                 subtitle: "رسالة من قلب الكتيبة",
                 audioSrc: "",
@@ -1205,6 +1324,7 @@ function initAdminSystem() {
 
     // Add Timeline Button
     document.getElementById("btnAddTimelineBtn").addEventListener("click", () => {
+        collectAdminData();
         if (!appData.timeline) appData.timeline = [];
         appData.timeline.unshift({
             id: `tl_${Date.now()}`,
@@ -1218,6 +1338,7 @@ function initAdminSystem() {
 
     // Add Letter Button
     document.getElementById("btnAddLetterBtn").addEventListener("click", () => {
+        collectAdminData();
         appData.lockedLetters.push({
             id: `letter_${Date.now()}`,
             title: "جواب جديد",
@@ -1230,6 +1351,7 @@ function initAdminSystem() {
 
     // Add Emergency Card Button
     document.getElementById("btnAddPharmacyCardBtn").addEventListener("click", () => {
+        collectAdminData();
         appData.emergencyCards.push({
             id: `card_${Date.now()}`,
             title: "افتحي لما...",
@@ -1243,12 +1365,14 @@ function initAdminSystem() {
 
     // Add Shake Message Button
     document.getElementById("btnAddShakeBtn").addEventListener("click", () => {
+        collectAdminData();
         appData.shakeMessages.push("رسالة هزار جديدة هنا... 😂");
         populateAdminShake();
     });
 
     // Add Study Quote Button
     document.getElementById("btnAddStudyQuoteBtn").addEventListener("click", () => {
+        collectAdminData();
         appData.thanaweya.studyQuotes.push("عافري عشان حلمك يا لالا.. أنا فخور بيكي دايماً! 🎓");
         populateAdminStudy();
     });
@@ -1281,6 +1405,25 @@ function populateAdminGeneral() {
     document.getElementById("admPinCode").value = s.adminPin || "1234";
 }
 
+function collectAdminVoiceOnly() {
+    const voiceCards = document.querySelectorAll("#admVoiceList > .admin-item-box");
+    voiceCards.forEach((card, index) => {
+        if (appData.voiceNotes && appData.voiceNotes[index]) {
+            const tInp = card.querySelector(".vn-title-input");
+            const sInp = card.querySelector(".vn-sub-input");
+            const uInp = card.querySelector(".vn-url-input");
+            if (tInp) appData.voiceNotes[index].title = tInp.value;
+            if (sInp) appData.voiceNotes[index].subtitle = sInp.value;
+            if (uInp) {
+                const urlVal = uInp.value.trim();
+                if (urlVal && (!appData.voiceNotes[index].audioSrc || !appData.voiceNotes[index].audioSrc.startsWith("data:"))) {
+                    appData.voiceNotes[index].audioSrc = normalizeAudioUrl(urlVal);
+                }
+            }
+        }
+    });
+}
+
 function populateAdminVoice() {
     const container = document.getElementById("admVoiceList");
     if (!container) return;
@@ -1293,12 +1436,14 @@ function populateAdminVoice() {
     }
 
     voices.forEach((vn, index) => {
+        if (!vn.id) vn.id = `vn_${Date.now()}_${index}`;
         const div = document.createElement("div");
         div.className = "admin-item-box";
+        const previewSrc = normalizeAudioUrl(vn.audioSrc || "");
         div.innerHTML = `
             <div class="admin-item-header">
                 <span style="font-weight: 800; font-size: 13px;">🎙️ فويس رقم ${index + 1}</span>
-                <button class="btn-delete-voice" data-index="${index}" style="background: none; border: none; color: red; font-size: 13px; cursor: pointer;">🗑️ حذف الفويس</button>
+                <button type="button" class="btn-delete-voice" data-index="${index}" style="background: none; border: none; color: red; font-size: 13px; cursor: pointer;">🗑️ حذف الفويس</button>
             </div>
             <div class="admin-input-group">
                 <label>عنوان الفويس (مثلاً: فويس الصباح، تشجيع مذاكرة):</label>
@@ -1315,15 +1460,15 @@ function populateAdminVoice() {
                     <span class="vn-rec-icon">🎙️</span>
                 </button>
                 <p class="vn-rec-status" style="font-weight: 800; font-size: 12px; color: var(--primary); margin: 4px 0;">
-                    ${vn.audioSrc ? '✅ يحتوي على تسجيل صوتي - اضغط لإعادة التسجيل' : 'اضغط لتسجيل هذا الفويس بالمايكروفون'}
+                    ${vn.audioSrc ? '✅ يحتوي على تسجيل صوتي جاهز - اضغط لإعادة التسجيل' : 'اضغط لتسجيل هذا الفويس بالمايكروفون'}
                 </p>
                 <div class="vn-rec-timer" style="font-size: 16px; font-weight: 900; display: none;">00:00</div>
-                <audio class="vn-audio-preview" controls src="${vn.audioSrc || ''}" style="width: 100%; margin-top: 8px; display: ${vn.audioSrc ? 'block' : 'none'};"></audio>
+                <audio class="vn-audio-preview" controls src="${previewSrc}" style="width: 100%; margin-top: 8px; display: ${vn.audioSrc ? 'block' : 'none'};"></audio>
             </div>
 
             <div class="admin-input-group">
-                <label>أو ارفع ملف صوتي من الموبايل (MP3 / فويس مسجل):</label>
-                <input type="file" accept="audio/*" class="admin-input vn-file-input" data-index="${index}">
+                <label>أو ارفع ملف صوتي من الموبايل (MP3 / M4A / OGG / WAV):</label>
+                <input type="file" accept="audio/*,.mp3,.m4a,.aac,.ogg,.wav,.opus,.webm" class="admin-input vn-file-input" data-index="${index}">
             </div>
             <div class="admin-input-group">
                 <label>أو الصق رابط مباشر للتسجيل الصوتي (URL):</label>
@@ -1331,18 +1476,42 @@ function populateAdminVoice() {
             </div>
         `;
 
+        // Live input listeners so typing is immediately saved in memory
+        div.querySelector(".vn-title-input").addEventListener("input", (e) => {
+            vn.title = e.target.value;
+        });
+        div.querySelector(".vn-sub-input").addEventListener("input", (e) => {
+            vn.subtitle = e.target.value;
+        });
+        div.querySelector(".vn-url-input").addEventListener("input", (e) => {
+            const val = e.target.value.trim();
+            if (val) {
+                vn.audioSrc = normalizeAudioUrl(val);
+                const preview = div.querySelector(".vn-audio-preview");
+                preview.src = vn.audioSrc;
+                preview.style.display = "block";
+                div.querySelector(".vn-rec-status").textContent = "✅ تم ربط الرابط الصوتي!";
+            }
+        });
+
         // File upload handler
         const fileInput = div.querySelector(".vn-file-input");
         fileInput.addEventListener("change", (e) => {
             const file = e.target.files[0];
             if (file) {
+                const statusEl = div.querySelector(".vn-rec-status");
+                statusEl.textContent = "⏳ جاري قراءة وتجهيز الملف الصوتي...";
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     vn.audioSrc = reader.result;
+                    vn._fileExt = (file.name.split('.').pop() || "mp3").toLowerCase();
+                    const urlInp = div.querySelector(".vn-url-input");
+                    if (urlInp) urlInp.value = "";
                     const preview = div.querySelector(".vn-audio-preview");
                     preview.src = reader.result;
                     preview.style.display = "block";
-                    div.querySelector(".vn-rec-status").textContent = "✅ تم رفع الملف الصوتي بنجاح!";
+                    statusEl.textContent = `✅ تم تجهيز الملف (${file.name}) بنجاح! اضغط حفظ بالأسفل.`;
+                    saveToIDB(appData);
                 };
                 reader.readAsDataURL(file);
             }
@@ -1357,10 +1526,16 @@ function populateAdminVoice() {
 
         recBtn.onclick = async () => {
             if (activeRecordingIndex === null) {
-                // Start
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
+                    // Use low bitrate if supported so recorded files stay small & fast
+                    let options = {};
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                        options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 32000 };
+                    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                        options = { mimeType: 'audio/mp4', audioBitsPerSecond: 32000 };
+                    }
+                    mediaRecorder = new MediaRecorder(stream, options);
                     audioChunks = [];
                     activeRecordingIndex = index;
 
@@ -1369,14 +1544,19 @@ function populateAdminVoice() {
                     };
 
                     mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const mime = mediaRecorder.mimeType || 'audio/webm';
+                        const audioBlob = new Blob(audioChunks, { type: mime });
                         const reader = new FileReader();
                         reader.readAsDataURL(audioBlob);
                         reader.onloadend = () => {
                             vn.audioSrc = reader.result;
+                            vn._fileExt = mime.includes("mp4") ? "m4a" : "webm";
+                            const urlInp = div.querySelector(".vn-url-input");
+                            if (urlInp) urlInp.value = "";
                             preview.src = reader.result;
                             preview.style.display = "block";
-                            statusText.textContent = "✅ تم التسجيل بنجاح! اضغط تشغيل للمعاينة.";
+                            statusText.textContent = "✅ تم التسجيل بنجاح! اضغط تشغيل للمعاينة أو حفظ بالأسفل.";
+                            saveToIDB(appData);
                         };
                     };
 
@@ -1399,7 +1579,6 @@ function populateAdminVoice() {
                     alert("تعذر الوصول للمايكروفون. تأكد من إعطاء إذن المايك في المتصفح أو اختر ملف صوتي.");
                 }
             } else if (activeRecordingIndex === index) {
-                // Stop
                 if (mediaRecorder && mediaRecorder.state !== "inactive") {
                     mediaRecorder.stop();
                     mediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -1416,6 +1595,7 @@ function populateAdminVoice() {
 
         // Delete handler
         div.querySelector(".btn-delete-voice").addEventListener("click", () => {
+            collectAdminVoiceOnly();
             appData.voiceNotes.splice(index, 1);
             populateAdminVoice();
         });
@@ -1435,7 +1615,7 @@ function populateAdminTimeline() {
         div.innerHTML = `
             <div class="admin-item-header">
                 <span style="font-weight: 800; font-size: 13px;">ذكرى رقم ${index + 1}</span>
-                <button class="btn-delete-timeline" data-index="${index}" style="background: none; border: none; color: red; font-size: 13px; cursor: pointer;">🗑️ حذف الذكرى</button>
+                <button type="button" class="btn-delete-timeline" data-index="${index}" style="background: none; border: none; color: red; font-size: 13px; cursor: pointer;">🗑️ حذف الذكرى</button>
             </div>
             <div class="admin-input-group">
                 <label>تاريخ الموقف:</label>
@@ -1474,7 +1654,7 @@ function populateAdminLetters() {
         div.innerHTML = `
             <div class="admin-item-header">
                 <span style="font-weight: 800; font-size: 13px;">جواب رقم ${index + 1}</span>
-                <button class="btn-delete-letter" data-index="${index}" style="background: none; border: none; color: red; font-size: 13px; cursor: pointer;">🗑️ حذف الجواب</button>
+                <button type="button" class="btn-delete-letter" data-index="${index}" style="background: none; border: none; color: red; font-size: 13px; cursor: pointer;">🗑️ حذف الجواب</button>
             </div>
             <div class="admin-input-group">
                 <label>عنوان الجواب:</label>
@@ -1513,7 +1693,7 @@ function populateAdminPharmacy() {
         div.innerHTML = `
             <div class="admin-item-header">
                 <span style="font-weight: 800; font-size: 13px; color: var(--primary);">${card.title}</span>
-                ${card.actionType !== "hug" ? `<button class="btn-delete-pharmacy" data-index="${index}" style="background: none; border: none; color: red; font-size: 12px; cursor: pointer;">🗑️ حذف</button>` : `<span style="font-size: 11px; color: #888;">(الزرار الرئيسي)</span>`}
+                ${card.actionType !== "hug" ? `<button type="button" class="btn-delete-pharmacy" data-index="${index}" style="background: none; border: none; color: red; font-size: 12px; cursor: pointer;">🗑️ حذف</button>` : `<span style="font-size: 11px; color: #888;">(الزرار الرئيسي)</span>`}
             </div>
             <div class="admin-input-group">
                 <label>عنوان الكرت:</label>
@@ -1553,7 +1733,7 @@ function populateAdminShake() {
         div.style.cssText = "display: flex; gap: 6px; align-items: center;";
         div.innerHTML = `
             <input type="text" class="admin-input shake-msg-input" data-index="${index}" value="${msg}" style="flex: 1;">
-            <button class="btn-delete-shake" data-index="${index}" style="background: none; border: none; color: red; font-size: 14px; cursor: pointer;">🗑️</button>
+            <button type="button" class="btn-delete-shake" data-index="${index}" style="background: none; border: none; color: red; font-size: 14px; cursor: pointer;">🗑️</button>
         `;
 
         div.querySelector(".btn-delete-shake").addEventListener("click", () => {
@@ -1574,7 +1754,7 @@ function populateAdminStudy() {
         div.style.cssText = "display: flex; gap: 6px; align-items: center;";
         div.innerHTML = `
             <textarea class="admin-textarea study-quote-input" data-index="${index}" rows="2" style="flex: 1;">${quote}</textarea>
-            <button class="btn-delete-study" data-index="${index}" style="background: none; border: none; color: red; font-size: 14px; cursor: pointer;">🗑️</button>
+            <button type="button" class="btn-delete-study" data-index="${index}" style="background: none; border: none; color: red; font-size: 14px; cursor: pointer;">🗑️</button>
         `;
 
         div.querySelector(".btn-delete-study").addEventListener("click", () => {
@@ -1610,17 +1790,7 @@ function collectAdminData() {
     appData.settings.adminPin = document.getElementById("admPinCode").value || "1234";
 
     // 2. Voice Notes
-    const voiceCards = document.querySelectorAll("#admVoiceList > .admin-item-box");
-    voiceCards.forEach((card, index) => {
-        if (appData.voiceNotes && appData.voiceNotes[index]) {
-            appData.voiceNotes[index].title = card.querySelector(".vn-title-input").value;
-            appData.voiceNotes[index].subtitle = card.querySelector(".vn-sub-input").value;
-            const urlVal = card.querySelector(".vn-url-input").value.trim();
-            if (urlVal && (!appData.voiceNotes[index].audioSrc || !appData.voiceNotes[index].audioSrc.startsWith("data:"))) {
-                appData.voiceNotes[index].audioSrc = urlVal;
-            }
-        }
-    });
+    collectAdminVoiceOnly();
 
     // 3. Timeline
     const tlCards = document.querySelectorAll("#admTimelineList > .admin-item-box");
@@ -1687,7 +1857,7 @@ function collectAdminData() {
 }
 
 // ==========================================
-// 15. GITHUB AUTO-SYNC & DATA.JSON ENGINE
+// 15. GITHUB AUTO-SYNC & VOICE FILE UPLOADER
 // ==========================================
 
 function getGitHubConfig() {
@@ -1709,7 +1879,6 @@ function getGitHubConfig() {
         console.error("Error reading GH config:", e);
     }
 
-    // Auto-detect from GitHub Pages hostname & pathname if not explicitly filled
     if ((!cfg.owner || !cfg.repo) && window.location.hostname.includes("github.io")) {
         const parts = window.location.pathname.split("/").filter(Boolean);
         if (!cfg.owner) cfg.owner = window.location.hostname.split(".")[0];
@@ -1786,11 +1955,9 @@ async function fetchRemoteGitHubData(manual = false) {
     }
 
     const candidateUrls = [];
-    // 1. Raw GitHub (Instant, bypasses static deploy cache)
     if (owner && repo) {
         candidateUrls.push(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/data.json?_t=${Date.now()}`);
     }
-    // 2. Relative file
     candidateUrls.push(`./data.json?_t=${Date.now()}`);
 
     for (const url of candidateUrls) {
@@ -1802,10 +1969,9 @@ async function fetchRemoteGitHubData(manual = false) {
                     const localTime = appData && appData.updatedAt ? new Date(appData.updatedAt).getTime() : 0;
                     const remoteTime = remote.updatedAt ? new Date(remote.updatedAt).getTime() : 1;
 
-                    // مقارنة زمنية خفيفة بدون استهلاك المعالج في stringify
                     if (manual || remoteTime > localTime || (!localTime && remote.updatedAt)) {
                         appData = remote;
-                        localStorage.setItem("yara_army_app_data", JSON.stringify(appData));
+                        safeSaveLocalStorage(appData);
                         refreshAllUI();
                         if (manual) {
                             showToast("✅ تم سحب أحدث نسخة بنجاح من GitHub! ❤️");
@@ -1823,6 +1989,61 @@ async function fetchRemoteGitHubData(manual = false) {
 
     if (manual) {
         showToast("⚠️ لم يتم العثور على تحديثات جديدة على GitHub.");
+    }
+    return false;
+}
+
+// Helper: Upload individual Base64 voice note as a separate audio file in /voices/ on GitHub
+// This completely prevents data.json from getting bloated or failing to save!
+async function uploadBase64VoiceToGitHub(vn, index, owner, repo, branch, headers) {
+    if (!vn || !vn.audioSrc || !vn.audioSrc.startsWith("data:")) return false;
+
+    const commaIdx = vn.audioSrc.indexOf(",");
+    if (commaIdx === -1) return false;
+
+    const headerPart = vn.audioSrc.substring(0, commaIdx);
+    const rawBase64 = vn.audioSrc.substring(commaIdx + 1).replace(/\s/g, "");
+
+    let ext = vn._fileExt || "mp3";
+    if (!vn._fileExt) {
+        if (headerPart.includes("webm")) ext = "webm";
+        else if (headerPart.includes("ogg")) ext = "ogg";
+        else if (headerPart.includes("wav")) ext = "wav";
+        else if (headerPart.includes("aac")) ext = "aac";
+        else if (headerPart.includes("mp4") || headerPart.includes("m4a")) ext = "m4a";
+    }
+
+    const safeId = (vn.id || `voice_${Date.now()}_${index}`).replace(/[^a-zA-Z0-9_-]/g, "");
+    const filePath = `voices/${safeId}.${ext}`;
+    const fileApiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+
+    let fileSha = null;
+    try {
+        const checkRes = await fetch(`${fileApiUrl}?ref=${branch}`, { headers, cache: "no-store" });
+        if (checkRes.status === 200) {
+            const ex = await checkRes.json();
+            fileSha = ex.sha;
+        }
+    } catch (_) {}
+
+    const putPayload = {
+        message: `🎙️ رفع فويس (${vn.title || safeId})`,
+        content: rawBase64,
+        branch: branch
+    };
+    if (fileSha) putPayload.sha = fileSha;
+
+    const putRes = await fetch(fileApiUrl, {
+        method: "PUT",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(putPayload)
+    });
+
+    if (putRes.ok) {
+        // Replace heavy base64 string with direct raw GitHub URL so it plays instantly anywhere!
+        vn.audioSrc = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+        delete vn._storedInIDB;
+        return true;
     }
     return false;
 }
@@ -1863,22 +2084,39 @@ async function syncDataToGitHub(interactive = true) {
         statusBox.style.background = "#ddf4ff";
         statusBox.style.borderColor = "#54aeff";
         statusBox.style.color = "#0969da";
-        statusText.innerHTML = "⏳ جاري الاتصال بـ GitHub وفحص ملف data.json...";
+        statusText.innerHTML = "⏳ جاري رفع الفويسات وتحديث ملف data.json على GitHub...";
     }
-    if (interactive) showToast("⏳ جاري المزامنة مع GitHub...");
-
-    // Update timestamp
-    appData.updatedAt = new Date().toISOString();
-    saveData(false);
+    if (interactive) showToast("⏳ جاري رفع الفويسات والمزامنة مع GitHub...");
 
     try {
-        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
         const headers = {
             "Accept": "application/vnd.github.v3+json",
             "Authorization": `Bearer ${token}`
         };
 
-        // 1. Fetch current file sha if it exists
+        // 1. Upload any new Base64 voice notes as separate audio files in /voices/
+        if (Array.isArray(appData.voiceNotes)) {
+            for (let i = 0; i < appData.voiceNotes.length; i++) {
+                const vn = appData.voiceNotes[i];
+                if (vn.audioSrc && vn.audioSrc.startsWith("data:")) {
+                    if (statusText) {
+                        statusText.innerHTML = `⏳ جاري رفع الفويس رقم (${i + 1} من ${appData.voiceNotes.length}) إلى GitHub...`;
+                    }
+                    await uploadBase64VoiceToGitHub(vn, i, owner, repo, branch, headers);
+                } else if (vn.audioSrc) {
+                    vn.audioSrc = normalizeAudioUrl(vn.audioSrc);
+                }
+            }
+        }
+
+        // Update timestamp & save clean URLs locally
+        appData.updatedAt = new Date().toISOString();
+        safeSaveLocalStorage(appData);
+        refreshAllUI();
+
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+
+        // 2. Fetch current data.json sha if it exists
         let sha = null;
         try {
             const checkRes = await fetch(`${apiUrl}?ref=${branch}`, { headers, cache: "no-store" });
@@ -1888,20 +2126,20 @@ async function syncDataToGitHub(interactive = true) {
             } else if (checkRes.status === 401) {
                 throw new Error("التوكن غير صحيح أو منتهي الصلاحية (Bad credentials). برجاء التأكد من التوكن.");
             } else if (checkRes.status === 404) {
-                sha = null; // New file will be created
+                sha = null;
             }
         } catch (checkErr) {
             if (checkErr.message.includes("التوكن")) throw checkErr;
             console.warn("Could not retrieve SHA, attempting commit anyway:", checkErr);
         }
 
-        // 2. Prepare PUT payload
+        // 3. Prepare PUT payload for data.json
         const jsonContent = JSON.stringify(appData, null, 2);
         const b64Content = utf8ToBase64(jsonContent);
 
         const rankTitle = getPartnerDisplayTitle();
         const payload = {
-            message: `💖 تحديث بيانات ورسائل ${rankTitle} ويارا - ${new Date().toLocaleString('ar-EG')}`,
+            message: `💖 تحديث بيانات وفويسات ${rankTitle} ويارا - ${new Date().toLocaleString('ar-EG')}`,
             content: b64Content,
             branch: branch
         };
@@ -1924,7 +2162,6 @@ async function syncDataToGitHub(interactive = true) {
             throw new Error(msg);
         }
 
-        const commitData = await putRes.json();
         cfg.lastSync = new Date().toISOString();
         saveGitHubConfig(cfg);
 
@@ -1933,15 +2170,15 @@ async function syncDataToGitHub(interactive = true) {
             statusBox.style.borderColor = "#4ac26b";
             statusBox.style.color = "#1a7f37";
             const timeStr = new Date().toLocaleTimeString('ar-EG');
-            statusText.innerHTML = `✅ <strong>تم التحديث بنجاح على GitHub!</strong><br>
-            <span style="font-size: 10px;">التوقيت: ${timeStr} | ملف data.json تم تحديثه أونلاين.</span>`;
+            statusText.innerHTML = `✅ <strong>تم رفع الفويسات وتحديث GitHub بنجاح!</strong><br>
+            <span style="font-size: 10px;">التوقيت: ${timeStr} | كل الفويسات محفوظة أونلاين وتعمل فوراً.</span>`;
         }
 
         if (window.confetti) {
             try { window.confetti({ particleCount: 35, spread: 60, origin: { y: 0.7 } }); } catch (e) {}
         }
 
-        showToast("🚀 تم تحديث data.json على GitHub بنجاح! يارا هتشوف التعديلات أوتوماتيك ❤️");
+        showToast("🚀 تم رفع كل الفويسات وتحديث GitHub بنجاح! ❤️");
         return true;
     } catch (err) {
         console.error("GitHub Sync error:", err);
