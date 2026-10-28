@@ -78,78 +78,65 @@
                     </div>
                 </div>
 
-                <!-- Voice Note Player (صوت حبيبك 🎙️) -->
-                <div class="voice-card" id="voicePlayerCard">
-                    <div class="voice-header">
-                        <div class="voice-title-box">
-                            <h3 id="voiceCardTitle">فويس نوت من حبيبك 🎙️❤️</h3>
-                            <p id="voiceCardSubtitle">اسمعي صوتي لما توحشيني والدنيا تقفل</p>
+                <!-- 1. Primary Playback & Seeking (Hero 3-Buttons) -->
+                <div class="voice-main-controls">
+                    <button class="voice-circle-btn" id="btnSeekBack" title="ترجيع 5 ثواني للخلف">
+                        <span class="btn-icon">↺</span>
+                        <span class="btn-text">5 ثواني</span>
+                    </button>
+
+                    <button class="voice-play-hero" id="btnPlayVoice" title="تشغيل / إيقاف">
+                        <span id="voicePlayIcon">▶</span>
+                    </button>
+
+                    <button class="voice-circle-btn" id="btnSeekForward" title="تقديم 5 ثواني للأمام">
+                        <span class="btn-icon">↻</span>
+                        <span class="btn-text">5 ثواني</span>
+                    </button>
+                </div>
+
+                <!-- 2. Luxury Touch Scrubber Bar & Waveforms -->
+                <div class="voice-scrub-box" dir="ltr">
+                    <span class="voice-badge-time" id="voiceCurrentTime">00:00</span>
+                    
+                    <div class="voice-track-hitbox" id="voiceTrackWrapper" title="اضغطي أو اسحبي للتقديم والترجيع">
+                        <div class="voice-track-rail">
+                            <div class="voice-track-fill" id="voiceTrackFill"></div>
+                            <div class="voice-track-thumb" id="voiceTrackThumb"></div>
                         </div>
-                        <div class="voice-controls-top">
-                            <button class="voice-shuffle-pill" id="btnShuffleVoice">🔀 عشوائي</button>
-                            <span class="badge-tag" id="voiceCounterBadge" style="font-size: 11px; padding: 3px 8px;">1 من 3</span>
+                        <!-- Integrated Ambient Waveform -->
+                        <div class="sound-waves" id="soundWaveBars">
+                            <div class="wave-bar"></div><div class="wave-bar"></div>
+                            <div class="wave-bar"></div><div class="wave-bar"></div>
+                            <div class="wave-bar"></div><div class="wave-bar"></div>
+                            <div class="wave-bar"></div><div class="wave-bar"></div>
+                            <div class="wave-bar"></div><div class="wave-bar"></div>
                         </div>
                     </div>
 
-                    <!-- 1. Primary Playback & Seeking (Hero 3-Buttons) -->
-                    <div class="voice-main-controls">
-                        <button class="voice-circle-btn" id="btnSeekBack" title="ترجيع 5 ثواني للخلف">
-                            <span class="btn-icon">↺</span>
-                            <span class="btn-text">5 ثواني</span>
-                        </button>
+                    <span class="voice-badge-time" id="voiceTotalTime">00:00</span>
+                </div>
 
-                        <button class="voice-play-hero" id="btnPlayVoice" title="تشغيل / إيقاف">
-                            <span id="voicePlayIcon">▶</span>
-                        </button>
+                <div class="voice-scrub-hint">
+                    <span>👈 اسحبي الشريط يمين أو شمال للتقديم والترجيع لأي ثانية 👉</span>
+                </div>
 
-                        <button class="voice-circle-btn" id="btnSeekForward" title="تقديم 5 ثواني للأمام">
-                            <span class="btn-icon">↻</span>
-                            <span class="btn-text">5 ثواني</span>
-                        </button>
-                    </div>
+                <!-- 3. Navigation (Previous, Speed, Next) -->
+                <div class="voice-sub-controls">
+                    <button class="voice-pill-action" id="btnPrevVoice">
+                        <span>⏮ السابق</span>
+                    </button>
 
-                    <!-- 2. Luxury Touch Scrubber Bar & Waveforms -->
-                    <div class="voice-scrub-box" dir="ltr">
-                        <span class="voice-badge-time" id="voiceCurrentTime">00:00</span>
-                        
-                        <div class="voice-track-hitbox" id="voiceTrackWrapper" title="اضغطي أو اسحبي للتقديم والترجيع">
-                            <div class="voice-track-rail">
-                                <div class="voice-track-fill" id="voiceTrackFill"></div>
-                                <div class="voice-track-thumb" id="voiceTrackThumb"></div>
-                            </div>
-                            <!-- Integrated Ambient Waveform -->
-                            <div class="sound-waves" id="soundWaveBars">
-                                <div class="wave-bar"></div><div class="wave-bar"></div>
-                                <div class="wave-bar"></div><div class="wave-bar"></div>
-                                <div class="wave-bar"></div><div class="wave-bar"></div>
-                                <div class="wave-bar"></div><div class="wave-bar"></div>
-                                <div class="wave-bar"></div><div class="wave-bar"></div>
-                            </div>
-                        </div>
+                    <button class="voice-pill-action speed-pill" id="btnVoiceSpeed" title="تسريع أو تبطيء الصوت">
+                        <span id="speedLabelText">⚡ 1x</span>
+                    </button>
 
-                        <span class="voice-badge-time" id="voiceTotalTime">00:00</span>
-                    </div>
+                    <button class="voice-pill-action" id="btnNextVoice">
+                        <span>التالي ⏭</span>
+                    </button>
+                </div>
 
-                    <div class="voice-scrub-hint">
-                        <span>👈 اسحبي الشريط يمين أو شمال للتقديم والترجيع لأي ثانية 👉</span>
-                    </div>
-
-                    <!-- 3. Navigation (Previous, Speed, Next) -->
-                    <div class="voice-sub-controls">
-                        <button class="voice-pill-action" id="btnPrevVoice">
-                            <span>⏮ السابق</span>
-                        </button>
-
-                        <button class="voice-pill-action speed-pill" id="btnVoiceSpeed" title="تسريع أو تبطيء الصوت">
-                            <span id="speedLabelText">⚡ 1x</span>
-                        </button>
-
-                        <button class="voice-pill-action" id="btnNextVoice">
-                            <span>التالي ⏭</span>
-                        </button>
-                    </div>
-
-                    <audio id="mainAudioElement" preload="metadata" style="display: none;"></audio>
+                <audio id="mainAudioElement" preload="metadata" style="display: none;"></audio>
                 <p id="voiceEmptyHint" style="font-size: 11px; color: #999; margin-top: 8px; text-align: center; display: none;">
                     (حبيبك لسه مسجلش فويس.. يقدر يسجل فويسات من لوحة التحكم ⚙️)
                 </p>
@@ -641,7 +628,7 @@
                 <div id="adm-voice" class="admin-section" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <span style="font-weight: 800; font-size: 13px;">الفويسات (بتتجاب عشوائي لـ يارا):</span>
-                        <button class="btn-secondary" id="btnAddVoiceBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة فويس جديد</button>
+                        <button type="button" class="btn-secondary" id="btnAddVoiceBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة فويس جديد</button>
                     </div>
                     <div id="admVoiceList" style="display: flex; flex-direction: column; gap: 12px;">
                         <!-- Generated dynamically for each voice note -->
@@ -652,7 +639,7 @@
                 <div id="adm-timeline" class="admin-section" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <span style="font-weight: 800; font-size: 13px;">تواريخ حكايتنا المميزة:</span>
-                        <button class="btn-secondary" id="btnAddTimelineBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة تاريخ وموقف جديد</button>
+                        <button type="button" class="btn-secondary" id="btnAddTimelineBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة تاريخ وموقف جديد</button>
                     </div>
                     <div id="admTimelineList" style="display: flex; flex-direction: column; gap: 10px;">
                         <!-- Generated dynamically -->
@@ -663,7 +650,7 @@
                 <div id="adm-letters" class="admin-section" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <span style="font-weight: 800; font-size: 13px;">الجوابات المقفولة:</span>
-                        <button class="btn-secondary" id="btnAddLetterBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة جواب مقفول جديد</button>
+                        <button type="button" class="btn-secondary" id="btnAddLetterBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة جواب مقفول جديد</button>
                     </div>
                     <div id="admLettersList" style="display: flex; flex-direction: column; gap: 10px;">
                         <!-- Generated dynamically -->
@@ -674,7 +661,7 @@
                 <div id="adm-pharmacy" class="admin-section" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <span style="font-weight: 800; font-size: 13px;">كبسولات صيدلية لالا:</span>
-                        <button class="btn-secondary" id="btnAddPharmacyCardBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة كرت دعم جديد</button>
+                        <button type="button" class="btn-secondary" id="btnAddPharmacyCardBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة كرت دعم جديد</button>
                     </div>
                     <div id="admPharmacyList" style="display: flex; flex-direction: column; gap: 12px;">
                         <!-- Generated dynamically -->
@@ -685,7 +672,7 @@
                 <div id="adm-shake" class="admin-section" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <span style="font-weight: 800; font-size: 13px;">رسايل الهزار عند هز الموبايل:</span>
-                        <button class="btn-secondary" id="btnAddShakeBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة رسالة</button>
+                        <button type="button" class="btn-secondary" id="btnAddShakeBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة رسالة</button>
                     </div>
                     <div id="admShakeList" style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Generated dynamically -->
@@ -696,7 +683,7 @@
                 <div id="adm-study" class="admin-section" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <span style="font-weight: 800; font-size: 13px;">رسائل تشجيع الثانوية العامة:</span>
-                        <button class="btn-secondary" id="btnAddStudyQuoteBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة تشجيع</button>
+                        <button type="button" class="btn-secondary" id="btnAddStudyQuoteBtn" style="padding: 5px 12px; font-size: 11px;">+ إضافة تشجيع</button>
                     </div>
                     <div id="admStudyList" style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Generated dynamically -->
@@ -728,10 +715,10 @@
                     <div style="background: linear-gradient(135deg, #0d1117, #161b22); color: #c9d1d9; border: 1px solid #30363d; border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                             <span style="font-size: 20px;">🐙</span>
-                            <strong style="color: #58a6ff; font-size: 14px;">المزامنة التلقائية مع GitHub (data.json)</strong>
+                            <strong style="color: #58a6ff; font-size: 14px;">المزامنة التلقائية مع GitHub (data.json + الفويسات)</strong>
                         </div>
                         <p style="font-size: 11px; line-height: 1.6; margin: 0; color: #8b949e;">
-                            أول ما تدوس حفظ، الموقع هيبعت كل بياناتك وفويساتك لملف <code style="color: #7ee787; background: #21262d; padding: 2px 5px; border-radius: 4px;">data.json</code> على الجيت هاب تلقائياً! يارا أول ما تفتح الموقع هيتحدث عندها مباشرة بدون ما تحتاج تبعتلها لينكات جديدة.
+                            أول ما تدوس حفظ، الموقع هيرفع الفويسات كملفات صوتية في فولدر <code style="color: #7ee787; background: #21262d; padding: 2px 5px; border-radius: 4px;">voices/</code> ويحدث <code style="color: #7ee787; background: #21262d; padding: 2px 5px; border-radius: 4px;">data.json</code> على الجيت هاب تلقائياً بدون أي حدود للمساحة!
                         </p>
                     </div>
 
@@ -742,7 +729,7 @@
                             <li>ادخل على إعدادات حسابك: <a href="https://github.com/settings/tokens" target="_blank" style="color: #0969da; text-decoration: underline;">GitHub Tokens</a></li>
                             <li>اضغط على <strong>Generate new token</strong> واختار <strong>Generate new token (classic)</strong>.</li>
                             <li>اكتب في الملاحظة (Note) أي اسم مثل: <code style="background: #f6f8fa; padding: 1px 4px;">yara-app</code>.</li>
-                            <li>علّم علامة صح على مربع <strong>repo</strong> (عشان يقدر يكتب في data.json).</li>
+                            <li>علّم علامة صح على مربع <strong>repo</strong> (عشان يقدر يرفع الفويسات ويكتب في data.json).</li>
                             <li>انزل لآخر الصفحة واضغط <strong>Generate token</strong>.</li>
                             <li>انسخ الكود اللي هيظهر (بيبدأ بـ <code style="background: #f6f8fa; padding: 1px 4px;">ghp_...</code>) وحطه في خانة التوكن بالأسفل واضغط حفظ. التوكن محفوظ في جهازك أنت بس ومستحيل يارا تشوفه.</li>
                         </ol>
@@ -779,7 +766,7 @@
                     <!-- GitHub Action buttons -->
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <button type="button" class="btn-primary" id="btnSyncGhNow" style="background: linear-gradient(135deg, #238636, #2ea043); border-color: #2ea043; color: #fff;">
-                            <span>🚀 حفظ وتحديث data.json على GitHub الآن</span>
+                            <span>🚀 حفظ ورفع الفويسات وتحديث GitHub الآن</span>
                         </button>
                         <button type="button" class="btn-secondary" id="btnFetchGhNow" style="background: #f6f8fa; color: #24292f; border-color: #d0d7de;">
                             <span>📥 سحب أحدث نسخة من GitHub (تحديث يدوي)</span>
@@ -818,9 +805,9 @@
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="default-data.js?v=2.8"></script>
-    <script src="app.js?v=2.8"></script>
-    <script src="romance3d.js?v=2.8"></script>
-    <script src="extras.js?v=2.8"></script>
+    <script src="default-data.js?v=2.9"></script>
+    <script src="app.js?v=2.9"></script>
+    <script src="romance3d.js?v=2.9"></script>
+    <script src="extras.js?v=2.9"></script>
 </body>
 </html>
