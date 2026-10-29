@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-29T01:33:51.096Z",
+  "updatedAt": "2026-10-29T03:55:18.066Z",
   "settings": {
     "adminPin": "1234",
     "yaraName": "يارا",
@@ -13,6 +13,15 @@
     "secretCodeHint": "اضغط على أيقونة الترس ⚙️ في أعلى الشاشة أو في الفوتر للدخول للوحة التحكم"
   },
   "voiceNotes": [
+    {
+      "id": "vn_1793245960749_522",
+      "title": "بااى يا لالا😭😭",
+      "subtitle": "رسالة من قلب الكتيبة",
+      "audioSrc": "https://raw.githubusercontent.com/zezo1895/lala/main/voices/vn_1793245960749_522.aac",
+      "recordedDate": "تسجيل جديد",
+      "_fileExt": "aac",
+      "_dur": 62.944372
+    },
     {
       "id": "vn_1793207113440",
       "title": "نوتى",
